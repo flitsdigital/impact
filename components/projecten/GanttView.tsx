@@ -76,6 +76,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
   const [drag, setDrag]       = useState<DragState | null>(null)
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const trackRef = useRef<HTMLDivElement>(null)
+  const wasDraggedRef = useRef(false)
 
   // ── Timeline range ──────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
     if (!p.start_date || !p.deadline) return
     e.preventDefault()
     e.stopPropagation()
+    wasDraggedRef.current = false
     setTooltip(null)
     setDrag({
       projectId:       p.id,
@@ -160,6 +162,9 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
         if (trackWidth === 0) return prev
         const totalDays = totalMs / 86_400_000
         const daysDelta = Math.round((e.clientX - prev.startX) / trackWidth * totalDays)
+        if (Math.abs(e.clientX - prev.startX) > 4) {
+          wasDraggedRef.current = true
+        }
         return {
           ...prev,
           currentStart:    addDays(prev.origStart,    daysDelta),
@@ -319,7 +324,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
                         onMouseEnter={e => { if (!drag) setTooltip({ project: p, x: e.clientX, y: e.clientY }) }}
                         onMouseMove={e  => { if (!drag) setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null) }}
                         onMouseLeave={() => setTooltip(null)}
-                        onClick={() => { if (!isDragging) router.push(`/projecten/${p.id}`) }}
+                        onClick={() => { if (wasDraggedRef.current) { wasDraggedRef.current = false; return } router.push(`/projecten/${p.id}`) }}
                       >
                         {p.naam}
                       </div>
