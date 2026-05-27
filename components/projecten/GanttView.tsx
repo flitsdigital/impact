@@ -55,9 +55,10 @@ function endOfMonth(d: Date): Date {
 }
 
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr)
-  d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)   // local midnight — DST-safe
+  date.setDate(date.getDate() + days)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 function toPct(dateStr: string, rangeStart: Date, totalMs: number): number {
@@ -77,6 +78,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const trackRef = useRef<HTMLDivElement>(null)
   const wasDraggedRef = useRef(false)
+  const isDragging = drag !== null
 
   // ── Timeline range ──────────────────────────────────────────────────────────
 
@@ -107,11 +109,11 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
   // ── Groups per klant ───────────────────────────────────────────────────────
 
   const groups = useMemo(() => {
-    const map = new Map<string, { label: string; items: ProjectWithKlant[] }>()
+    const map = new Map<string, { key: string; label: string; items: ProjectWithKlant[] }>()
     for (const p of withDates) {
       const key   = p.klant_id ?? '__intern'
       const label = p.klanten?.naam ?? 'Intern'
-      if (!map.has(key)) map.set(key, { label, items: [] })
+      if (!map.has(key)) map.set(key, { key, label, items: [] })
       map.get(key)!.items.push(p)
     }
     return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'nl'))
@@ -153,7 +155,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
   }, [])
 
   useEffect(() => {
-    if (!drag) return
+    if (!isDragging) return
 
     function onMouseMove(e: MouseEvent) {
       setDrag(prev => {
@@ -175,7 +177,10 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
 
     function onMouseUp() {
       setDrag(prev => {
-        if (prev) onDatesChange(prev.projectId, prev.currentStart, prev.currentDeadline)
+        if (prev) {
+          const { projectId, currentStart, currentDeadline } = prev
+          Promise.resolve().then(() => onDatesChange(projectId, currentStart, currentDeadline))
+        }
         return null
       })
     }
@@ -186,7 +191,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseup',   onMouseUp)
     }
-  }, [drag, totalMs, onDatesChange])
+  }, [isDragging, totalMs, onDatesChange])
 
   // ── Milestones per project ─────────────────────────────────────────────────
 
@@ -260,7 +265,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
 
         {groups.map(group => (
-          <div key={group.label}>
+          <div key={group.key}>
 
             {/* Group header */}
             <div className="flex items-center gap-2 px-4 py-1.5 bg-bg-2/40 border-b border-border/50 sticky top-0 z-10">
