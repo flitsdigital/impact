@@ -49,7 +49,10 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
     setLocalProjects(prev => prev.map(p =>
       p.id === projectId ? { ...p, start_date: start, deadline } : p,
     ))
-    startTransition(() => { updateProject(projectId, { start_date: start, deadline }) })
+    startTransition(async () => {
+      const result = await updateProject(projectId, { start_date: start, deadline })
+      if (result.error) console.error('[GanttView] updateProject failed:', result.error)
+    })
   }
 
   const taskCountByProject = useMemo(() => {
@@ -66,11 +69,14 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
     .filter(p => p.klanten)
     .map(p => ({ id: p.klanten!.id, naam: p.klanten!.naam }))
 
-  const filteredProjects = localProjects.filter(p => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase()
-    return p.naam.toLowerCase().includes(q) || p.klanten?.naam?.toLowerCase().includes(q)
-  })
+  const filteredProjects = useMemo(() =>
+    localProjects.filter(p => {
+      if (!searchQuery.trim()) return true
+      const q = searchQuery.toLowerCase()
+      return p.naam.toLowerCase().includes(q) || p.klanten?.naam?.toLowerCase().includes(q)
+    }),
+    [localProjects, searchQuery],
+  )
 
   const isEmpty = localProjects.length === 0
 
@@ -124,7 +130,7 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <SvgIcon name="chart-kanban" size={32} className="text-fg-disabled" />
+            <SvgIcon name={view === 'kanban' ? 'chart-kanban' : 'chart-gantt'} size={32} className="text-fg-disabled" />
             <div className="flex flex-col gap-1">
               <span className="text-[14px] font-medium text-fg-2">Nog geen projecten</span>
               <span className="text-[12px] text-fg-3">Maak je eerste project aan om te beginnen.</span>
