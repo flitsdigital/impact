@@ -69,6 +69,10 @@ function fmtDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
 }
 
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 export function GanttView({ projects, milestones, onDatesChange }: GanttViewProps) {
@@ -97,7 +101,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
   const totalMs    = useMemo(() => rangeEnd.getTime() - rangeStart.getTime(), [rangeStart, rangeEnd])
 
   const todayPct = useMemo(
-    () => toPct(today.toISOString().slice(0, 10), rangeStart, totalMs),
+    () => toPct(toLocalDateStr(today), rangeStart, totalMs),
     [today, rangeStart, totalMs],
   )
 
