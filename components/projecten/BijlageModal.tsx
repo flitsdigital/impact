@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useRef, useTransition } from 'react'
-import { X, Link2, FileText, Upload, Trash2, ExternalLink } from 'lucide-react'
+import { X, Link2, Upload, Trash2, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
+import { DocumentIcon } from '@/components/projecten/DocumentIcon'
 import type { ProjectDocument } from '@/types/project'
 import { addProjectDocument, deleteProjectDocument, uploadProjectFile } from '@/app/(app)/projecten/actions'
 
@@ -83,38 +84,35 @@ export function BijlageModal({
     setUploading(true)
     setError(null)
 
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const base64 = (reader.result as string).split(',')[1]
-      const uploadResult = await uploadProjectFile(projectId, file.name, base64, file.type)
+    const formData = new FormData()
+    formData.append('file', file)
+    const uploadResult = await uploadProjectFile(projectId, formData)
 
-      if (uploadResult.error) {
-        setError(uploadResult.error)
-        setUploading(false)
-        return
-      }
-
-      const docResult = await addProjectDocument(projectId, 'file', fileName, uploadResult.url!)
-      if (docResult.error) {
-        setError(docResult.error)
-        setUploading(false)
-        return
-      }
-
-      const newDoc: ProjectDocument = {
-        id: docResult.id!,
-        project_id: projectId,
-        type: 'file',
-        naam: fileName,
-        url: uploadResult.url!,
-        created_at: new Date().toISOString(),
-      }
-      onDocumentsChange([...documents, newDoc])
-      resetForm()
+    if (uploadResult.error) {
+      setError(uploadResult.error)
       setUploading(false)
-      if (fileRef.current) fileRef.current.value = ''
+      return
     }
-    reader.readAsDataURL(file)
+
+    const docResult = await addProjectDocument(projectId, 'file', fileName, uploadResult.url!)
+    if (docResult.error) {
+      setError(docResult.error)
+      setUploading(false)
+      return
+    }
+
+    const newDoc: ProjectDocument = {
+      id: docResult.id!,
+      project_id: projectId,
+      type: 'file',
+      naam: fileName,
+      url: uploadResult.url!,
+      created_at: new Date().toISOString(),
+    }
+    onDocumentsChange([...documents, newDoc])
+    resetForm()
+    setUploading(false)
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   function handleDeleteDoc(docId: string) {
@@ -259,11 +257,7 @@ export function BijlageModal({
               </p>
               {documents.map((doc) => (
                 <div key={doc.id} className="flex items-center gap-2 py-1.5 group">
-                  {doc.type === 'link' ? (
-                    <Link2 size={13} className="text-fg-3 shrink-0" />
-                  ) : (
-                    <FileText size={13} className="text-fg-3 shrink-0" />
-                  )}
+                  <DocumentIcon type={doc.type} url={doc.url} size={13} />
                   <a
                     href={doc.url}
                     target="_blank"

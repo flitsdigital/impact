@@ -315,19 +315,20 @@ export async function deleteProjectDocument(documentId: string): Promise<{ error
 
 export async function uploadProjectFile(
   projectId: string,
-  fileName: string,
-  fileData: string,
-  contentType: string,
+  formData: FormData,
 ): Promise<{ error?: string; url?: string }> {
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
-  const path = `${projectId}/${Date.now()}-${fileName}`
-  const bytes = Buffer.from(fileData, 'base64')
+  const file = formData.get('file')
+  if (!(file instanceof File)) return { error: 'Geen bestand ontvangen.' }
+
+  const path = `${projectId}/${Date.now()}-${file.name}`
+  const bytes = Buffer.from(await file.arrayBuffer())
 
   const { error: uploadError } = await supabase.storage
     .from('project-docs')
-    .upload(path, bytes, { contentType, upsert: false })
+    .upload(path, bytes, { contentType: file.type, upsert: false })
 
   if (uploadError) return { error: uploadError.message }
 

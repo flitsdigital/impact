@@ -31,8 +31,6 @@ export function AssigneesModal({
   const [saving, setSaving]     = useState(false)
   const [, startTransition]     = useTransition()
 
-  if (!open) return null
-
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     if (!q) return teamMembers
@@ -42,6 +40,8 @@ export function AssigneesModal({
         m.email?.toLowerCase().includes(q),
     )
   }, [teamMembers, search])
+
+  if (!open) return null
 
   function toggle(id: string) {
     setSelected((prev) => {
