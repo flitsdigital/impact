@@ -95,6 +95,10 @@ export function ProjectDetailModule({
   const [startDateVal, setStartDateVal] = useState(project.start_date ?? '')
   const [deadlineVal, setDeadlineVal] = useState(project.deadline ?? '')
 
+  // Inline description editing state
+  const [editingBeschrijving, setEditingBeschrijving] = useState(false)
+  const [beschrijvingVal, setBeschrijvingVal] = useState(project.beschrijving ?? '')
+
   const isFavorite = project.favorites?.length > 0
 
   // ── Task actions ────────────────────────────────────────────────────────────
@@ -177,6 +181,21 @@ export function ProjectDetailModule({
     setStartDateVal(project.start_date ?? '')
     setDeadlineVal(project.deadline ?? '')
     setEditingDate(false)
+  }
+
+  function handleBeschrijvingSave() {
+    const next = beschrijvingVal.trim() || null
+    setEditingBeschrijving(false)
+    if (next === (project.beschrijving ?? null)) return
+    setProject((p) => ({ ...p, beschrijving: next }))
+    startTransition(() => {
+      updateProject(project.id, { beschrijving: next })
+    })
+  }
+
+  function handleBeschrijvingCancel() {
+    setBeschrijvingVal(project.beschrijving ?? '')
+    setEditingBeschrijving(false)
   }
 
   function handleDocumentsChange(docs: ProjectDocument[]) {
@@ -307,10 +326,34 @@ export function ProjectDetailModule({
                 {project.naam}
               </h1>
 
-              {/* Description placeholder */}
-              <p className="text-[13px] text-fg-3">
-                {project.beschrijving || 'Voeg een korte beschrijving toe...'}
-              </p>
+              {/* Description — click to edit inline */}
+              {editingBeschrijving ? (
+                <textarea
+                  ref={(el) => { el?.focus() }}
+                  value={beschrijvingVal}
+                  onChange={(e) => setBeschrijvingVal(e.target.value)}
+                  onBlur={handleBeschrijvingSave}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.preventDefault()
+                      handleBeschrijvingCancel()
+                    }
+                  }}
+                  rows={3}
+                  placeholder="Voeg een korte beschrijving toe..."
+                  aria-label="Projectbeschrijving"
+                  className="bg-transparent outline-none resize-none text-[13px] text-fg-1 placeholder:text-fg-3 w-full"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingBeschrijving(true)}
+                  className="text-[13px] text-fg-3 text-left w-full whitespace-pre-wrap hover:text-fg-2 transition-colors"
+                  title="Beschrijving bewerken"
+                >
+                  {project.beschrijving || 'Voeg een korte beschrijving toe...'}
+                </button>
+              )}
 
               {/* ── Metadata row 1: priority + status + assignees + date range ── */}
               <div className="flex items-center gap-4 flex-wrap">
