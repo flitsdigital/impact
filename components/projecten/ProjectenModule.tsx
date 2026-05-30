@@ -10,7 +10,7 @@ import { KanbanBoard as SharedKanbanBoard } from '@/components/ui/KanbanBoard'
 import { ProjectKaart } from './ProjectKaart'
 import { GanttView } from './GanttView'
 import { NieuwProjectDrawer } from './NieuwProjectDrawer'
-import type { Project, Milestone } from '@/types/project'
+import type { Project, Milestone, ProjectAssigneeProfile } from '@/types/project'
 import { PROJECT_COLUMNS } from '@/types/project'
 import { moveProject, updateProject } from '@/app/(app)/projecten/actions'
 import { FilePlus } from 'lucide-react'
@@ -24,7 +24,10 @@ const VIEWS: { key: View; iconName: string; label: string }[] = [
 ]
 
 interface ProjectenModuleProps {
-  projects:   Array<Project & { klanten?: { id: string; naam: string } | null }>
+  projects:   Array<Project & {
+    klanten?:  { id: string; naam: string } | null
+    assignees: ProjectAssigneeProfile[]
+  }>
   tasks:      Array<{ project_id: string; status: string }>
   milestones: Milestone[]
 }
@@ -153,6 +156,7 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
             renderCard={(project, isDragging) => (
               <ProjectKaart
                 project={project}
+                assignees={project.assignees}
                 taskCounts={taskCountByProject[project.id] ?? { total: 0, done: 0 }}
                 isDragging={isDragging}
                 onClick={() => router.push(`/projecten/${project.id}`)}
