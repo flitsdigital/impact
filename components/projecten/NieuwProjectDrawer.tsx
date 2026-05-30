@@ -8,11 +8,6 @@ import { createProject } from '@/app/(app)/projecten/actions'
 import { X, ChevronRight, Calendar, User } from 'lucide-react'
 import type { ProjectStatus } from '@/types/project'
 
-const PROJECT_COLORS = [
-  '#5B5BD6', '#8E4EC5', '#46A557', '#FFB223', '#0072F5',
-  '#f43f5e', '#06b6d4', '#84cc16', '#f59e0b', '#6366f1',
-]
-
 const STATUS_OPTIONS: { value: ProjectStatus; label: string; dot: string }[] = [
   { value: 'gepland',      label: 'Gepland',      dot: '#FFB223' },
   { value: 'bezig',        label: 'Bezig',        dot: '#46A557' },
@@ -32,7 +27,7 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
   const [samenvatting, setSamenvatting] = useState('')
   const [beschrijving, setBeschrijving] = useState('')
   const [klantId, setKlantId]         = useState('')
-  const [kleur, setKleur]             = useState('#5B5BD6')
+  const kleur = '#5B5BD6'
   const [status, setStatus]           = useState<ProjectStatus>('bezig')
   const [deadline, setDeadline]       = useState('')
   const [budget, setBudget]           = useState('')
@@ -104,15 +99,12 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
           onClick={(e) => e.stopPropagation()}
         >
           {/* Project icon */}
-          <button
-            type="button"
-            onClick={(e) => toggleChip('kleur', e)}
-            className="size-10 rounded-xl flex items-center justify-center transition-colors self-start shrink-0"
+          <div
+            className="size-10 rounded-xl flex items-center justify-center self-start shrink-0"
             style={{ backgroundColor: kleur + '22' }}
-            title="Projectkleur"
           >
             <div className="size-4 rounded-full" style={{ backgroundColor: kleur }} />
-          </button>
+          </div>
 
           {/* Naam */}
           <input
@@ -219,42 +211,6 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
                 )}
               </div>
             )}
-
-            {/* Kleur */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={(e) => toggleChip('kleur', e)}
-                className={cn(
-                  'flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] border transition-colors',
-                  openChip === 'kleur'
-                    ? 'bg-bg-3 border-border text-fg-1'
-                    : 'bg-bg-0 border-border-subtle text-fg-2 hover:border-border hover:text-fg-1',
-                )}
-              >
-                <div className="size-3 rounded-full shrink-0" style={{ backgroundColor: kleur }} />
-                Kleur
-              </button>
-              {openChip === 'kleur' && (
-                <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg p-3">
-                  <div className="flex gap-2 flex-wrap w-[148px]">
-                    {PROJECT_COLORS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        aria-label={`Kleur ${c}`}
-                        onClick={() => { setKleur(c); setOpenChip(null) }}
-                        className={cn(
-                          'size-7 rounded-full transition-all shrink-0',
-                          kleur === c && 'ring-2 ring-white ring-offset-1 ring-offset-bg-2',
-                        )}
-                        style={{ backgroundColor: c }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* Deadline */}
             <div className="relative">

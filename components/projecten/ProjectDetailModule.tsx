@@ -18,6 +18,7 @@ import type {
   TaskWithRelations,
   TaskStatus,
   TaskPriority,
+  ProjectStatus,
 } from '@/types/project'
 import { PRIORITY_CONFIG, KANBAN_COLUMNS, PROJECT_COLUMNS } from '@/types/project'
 import type { TeamMember } from '@/types/team'
@@ -29,12 +30,11 @@ import {
   ChevronRight,
   MessageSquare,
   LayoutGrid,
-  Link2,
-  FileText,
   Pencil,
   Check,
   X,
 } from 'lucide-react'
+import { DocumentIcon } from '@/components/projecten/DocumentIcon'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -81,6 +81,7 @@ export function ProjectDetailModule({
   const [nieuweTaakOpen, setNieuweTaakOpen]     = useState(false)
   const [bijlageOpen, setBijlageOpen]           = useState(false)
   const [assigneesOpen, setAssigneesOpen]       = useState(false)
+  const [statusOpen, setStatusOpen]             = useState(false)
   const [defaultTaskStatus, setDefaultTaskStatus] = useState<TaskStatus>('todo')
   const [taakKey, setTaakKey]                   = useState(0)
   const [, startTransition]                     = useTransition()
@@ -169,6 +170,13 @@ export function ProjectDetailModule({
 
   function handleAssigneesChange(assignees: ProjectAssigneeProfile[]) {
     setProject((p) => ({ ...p, assignees }))
+  }
+
+  function handleStatusChange(newStatus: ProjectStatus) {
+    setStatusOpen(false)
+    if (newStatus === project.status) return
+    setProject((p) => ({ ...p, status: newStatus }))
+    startTransition(() => { updateProject(project.id, { status: newStatus }) })
   }
 
   // ── Status / priority info ──────────────────────────────────────────────────
@@ -301,11 +309,44 @@ export function ProjectDetailModule({
                   </div>
                 )}
 
-                {/* Status */}
+                {/* Status — click to change */}
                 {statusCol && (
-                  <div className="flex items-center gap-1">
-                    <SvgIcon name={statusCol.iconName} size={13} className={statusCol.textClass} />
-                    <span className="text-[12px] text-fg-2">{statusCol.label}</span>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setStatusOpen((v) => !v)}
+                      className="flex items-center gap-1 rounded hover:bg-bg-3 px-1 py-0.5 -mx-1 transition-colors"
+                      title="Status wijzigen"
+                    >
+                      <SvgIcon name={statusCol.iconName} size={13} className={statusCol.textClass} />
+                      <span className="text-[12px] text-fg-2">{statusCol.label}</span>
+                    </button>
+                    {statusOpen && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label="Sluit statusmenu"
+                          className="fixed inset-0 z-10 cursor-default"
+                          onClick={() => setStatusOpen(false)}
+                        />
+                        <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg py-1 min-w-[160px]">
+                          {PROJECT_COLUMNS.map((col) => (
+                            <button
+                              key={col.status}
+                              type="button"
+                              onClick={() => handleStatusChange(col.status)}
+                              className={cn(
+                                'w-full text-left flex items-center gap-2 px-3 py-1.5 text-[12px] hover:bg-bg-3 transition-colors',
+                                project.status === col.status ? 'text-fg-1 font-medium' : 'text-fg-2',
+                              )}
+                            >
+                              <SvgIcon name={col.iconName} size={13} className={col.textClass} />
+                              {col.label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -398,17 +439,8 @@ export function ProjectDetailModule({
                 )}
               </div>
 
-              {/* ── Metadata row 2: project color + client + labels + documents ── */}
+              {/* ── Metadata row 2: client + labels + documents ── */}
               <div className="flex items-center gap-4 flex-wrap">
-                {/* Project color + name */}
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="size-[10px] rounded-sm shrink-0"
-                    style={{ backgroundColor: project.kleur }}
-                  />
-                  <span className="text-[12px] text-fg-2">{project.naam}</span>
-                </div>
-
                 {/* Client */}
                 {project.klanten && (
                   <div className="flex items-center gap-1.5">
@@ -437,11 +469,7 @@ export function ProjectDetailModule({
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-[12px] text-fg-2 hover:text-fg-1 transition-colors"
                   >
-                    {doc.type === 'link' ? (
-                      <Link2 size={12} className="text-fg-3 shrink-0" />
-                    ) : (
-                      <FileText size={12} className="text-fg-3 shrink-0" />
-                    )}
+                    <DocumentIcon type={doc.type} url={doc.url} size={12} />
                     {doc.naam}
                   </a>
                 ))}
