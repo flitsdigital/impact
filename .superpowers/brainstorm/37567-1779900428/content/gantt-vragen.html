@@ -1,0 +1,133 @@
+<h2>Gantt chart — 10 vragen</h2>
+<p class="subtitle">Klik de antwoorden aan per vraag, of geef je antwoord in de terminal. Meerdere keuzes zijn toegestaan waar aangegeven.</p>
+
+<style>
+  .qa-grid { display: flex; flex-direction: column; gap: 28px; margin-top: 24px; }
+  .qa-block { background: var(--card-bg, rgba(255,255,255,0.04)); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 12px; padding: 20px 24px; }
+  .qa-num { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: var(--accent, #6366f1); text-transform: uppercase; margin-bottom: 6px; }
+  .qa-q { font-size: 14px; font-weight: 600; color: var(--text, #f1f1f1); margin-bottom: 14px; }
+  .qa-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .qa-opt { padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.12); font-size: 13px; cursor: pointer; color: var(--text, #f1f1f1); background: transparent; transition: all 0.15s; user-select: none; }
+  .qa-opt:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.06); }
+  .qa-opt.selected { background: var(--accent, #6366f1); border-color: var(--accent, #6366f1); color: #fff; }
+  .qa-hint { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 10px; }
+</style>
+
+<script>
+  function toggleOpt(el) {
+    const block = el.closest('.qa-opts');
+    const isMulti = block.dataset.multi === '1';
+    if (!isMulti) block.querySelectorAll('.qa-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.toggle('selected');
+  }
+</script>
+
+<div class="qa-grid">
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 1</div>
+    <div class="qa-q">Welke tijdschaal wil je standaard zien in de Gantt?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">📅 Maanden (standaard)</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">📆 Kwartalen</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🗓️ Volledig jaar</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🔀 Wisselbaar met toggle</div>
+    </div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 2</div>
+    <div class="qa-q">Waarmee kleuren de balken in de Gantt?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">🎨 Projectkleur (al ingesteld)</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🟠 Projectstatus (gepland/bezig/klaar)</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🔴 Prioriteit</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🏷️ Klantkleur</div>
+    </div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 3</div>
+    <div class="qa-q">Wil je datums kunnen aanpassen door te slepen in de Gantt?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">✋ Ja, balken verslepen (start + deadline)</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">👁️ Nee, alleen lezen — aanpassen via project detail</div>
+    </div>
+    <div class="qa-hint">Drag-to-reschedule is mooi maar kost flink meer bouwwerk.</div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 4</div>
+    <div class="qa-q">Wat te doen met projecten zonder start_date of deadline?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">🙈 Verberg ze in Gantt-view</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">📌 Toon ze als stipje op "vandaag"</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">📋 Toon ze in een aparte lijst onderaan</div>
+    </div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 5</div>
+    <div class="qa-q">Wat wil je zien als je met je muis over een balk zweeft?</div>
+    <div class="qa-opts" data-multi="1">
+      <div class="qa-opt" onclick="toggleOpt(this)">📛 Projectnaam</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">👤 Klant</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">📅 Start- en einddatum</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">✅ Taakvoortgang (x/y taken klaar)</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🏷️ Status</div>
+    </div>
+    <div class="qa-hint">Meerdere keuzes mogelijk.</div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 6</div>
+    <div class="qa-q">Wil je een "vandaag"-lijn zichtbaar in de Gantt?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">✅ Ja</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">❌ Nee</div>
+    </div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 7</div>
+    <div class="qa-q">Wil je projecten groeperen in de Gantt?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">👥 Per klant</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🟠 Per status</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🔤 Alfabetisch (geen groepering)</div>
+    </div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 8</div>
+    <div class="qa-q">Wil je mijlpalen zichtbaar op de Gantt-balk?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">💎 Ja, als ruit/marker op de balk</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">❌ Nee, te druk</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">🔘 Optioneel via toggle</div>
+    </div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 9</div>
+    <div class="qa-q">Klikken op een balk in de Gantt — wat doet dat?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">🔗 Navigeer naar project detail pagina</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">📋 Open een quick-preview tooltip/popover</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">✏️ Open een edit drawer</div>
+    </div>
+  </div>
+
+  <div class="qa-block">
+    <div class="qa-num">Vraag 10</div>
+    <div class="qa-q">Rijhoogte / informatiedichtheid in de Gantt?</div>
+    <div class="qa-opts">
+      <div class="qa-opt" onclick="toggleOpt(this)">🗜️ Compact — alleen balk, naam erin</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">📊 Normaal — naam + klantlogo naast balk</div>
+      <div class="qa-opt" onclick="toggleOpt(this)">📐 Ruim — naam, klant, progress bar onder balk</div>
+    </div>
+  </div>
+
+</div>
+
+<p style="margin-top:32px; font-size:12px; color: rgba(255,255,255,0.3);">Klik je keuzes aan en stuur je antwoorden in de terminal — of beantwoord alles gewoon in tekst.</p>

@@ -1,0 +1,729 @@
+# Gantt Chart View — Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Add a Gantt chart view alongside the existing Kanban view in the Projecten module, showing project timelines grouped per klant with drag-to-reschedule, milestone markers, a today-line, and a "zonder planning" section for projects without dates.
+
+**Architecture:** A new `GanttView` client component handles all timeline rendering and drag logic. `ProjectenModule` gains a `view` state (`'kanban' | 'gantt'`) with a `PageToolbar` toggle rendered inside `PageHeader`. The Supabase query in `page.tsx` is extended to include `start_date` and `milestones`. Drag-to-reschedule optimistically updates local state and calls the existing `updateProject` server action.
+
+**Tech Stack:** React (hooks: useState, useEffect, useRef, useMemo, useCallback), Tailwind CSS, existing `SvgIcon` + `PageToolbar` + `PageHeader` components, existing `updateProject` server action.
+
+---
+
+### Task 1: Extend page query — include start_date and milestones
+
+**Files:**
+- Modify: `app/(app)/projecten/page.tsx`
+
+- [ ] **Step 1: Replace page.tsx with extended query**
+
+```typescript
+// app/(app)/projecten/page.tsx
+import { createClient } from '@/lib/supabase/server'
+import { ProjectenModule } from '@/components/projecten/ProjectenModule'
+import type { Project, Milestone } from '@/types/project'
+
+export default async function ProjectenPage() {
+  const supabase = await createClient()
+
+  const { data: rawProjects } = await supabase
+    .from('projects')
+    .select(`
+      id, klant_id, naam, beschrijving, status, kleur, prioriteit,
+      budget, start_date, deadline, project_number,
+      created_at, updated_at,
+      klanten ( id, naam )
+    `)
+    .not('status', 'eq', 'gearchiveerd')
+    .order('naam')
+
+  const { data: taskSummary } = await supabase
+    .from('tasks')
+    .select('project_id, status')
+
+  const { data: rawMilestones } = await supabase
+    .from('milestones')
+    .select('id, project_id, naam, datum, voltooid, created_at')
+
+  const projects: Array<Project & { klanten?: { id: string; naam: string } | null }> =
+    (rawProjects ?? []).map((p: any) => ({ ...p }))
+
+  const milestones: Milestone[] = (rawMilestones ?? []).map((m: any) => ({ ...m }))
+
+  return (
+    <ProjectenModule
+      projects={projects}
+      tasks={taskSummary ?? []}
+      milestones={milestones}
+    />
+  )
+}
+```
+
+- [ ] **Step 2: Verify TypeScript compiles**
+
+```bash
+npx tsc --noEmit 2>&1 | head -20
+```
+
+Expected: no new errors.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add app/(app)/projecten/page.tsx
+git commit -m "feat(projecten): extend page query with start_date and milestones"
+```
+
+---
+
+### Task 2: Build GanttView component
+
+**Files:**
+- Create: `components/projecten/GanttView.tsx`
+
+- [ ] **Step 1: Create the GanttView component**
+
+```tsx
+// components/projecten/GanttView.tsx
+'use client'
+
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { SvgIcon } from '@/components/ui/SvgIcon'
+import { cn } from '@/lib/utils'
+import type { Project, Milestone, ProjectStatus } from '@/types/project'
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+
+const MONTHS_VISIBLE = 6
+const LABEL_COL_W   = 220  // pixels — must match inline style below
+
+const MONTH_NL = ['Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec']
+
+// Status config matches PROJECT_COLUMNS in types/project.ts
+const STATUS_CFG: Record<ProjectStatus, { icon: string; iconClass: string; barClass: string }> = {
+  gepland:      { icon: 'circle-dashed', iconClass: 'text-fg-2',      barClass: 'bg-[rgba(145,145,147,0.3)] border border-[rgba(145,145,147,0.5)]' },
+  bezig:        { icon: 'circle-notch',  iconClass: 'text-orange-500', barClass: 'bg-[rgba(251,146,60,0.3)]  border border-[rgba(251,146,60,0.5)]'  },
+  feedback:     { icon: 'circle',        iconClass: 'text-blue-500',   barClass: 'bg-[rgba(96,165,250,0.3)]  border border-[rgba(96,165,250,0.5)]'  },
+  klaar:        { icon: 'circle-check',  iconClass: 'text-green-500',  barClass: 'bg-[rgba(74,222,128,0.25)] border border-[rgba(74,222,128,0.45)]' },
+  gearchiveerd: { icon: 'circle-dashed', iconClass: 'text-fg-3',       barClass: 'bg-[rgba(145,145,147,0.2)] border border-[rgba(145,145,147,0.3)]' },
+}
+
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+type ProjectWithKlant = Project & { klanten?: { id: string; naam: string } | null }
+
+interface DragState {
+  projectId:       string
+  startX:          number
+  origStart:       string
+  origDeadline:    string
+  currentStart:    string
+  currentDeadline: string
+}
+
+interface TooltipState {
+  project: ProjectWithKlant
+  x: number
+  y: number
+}
+
+interface GanttViewProps {
+  projects:      ProjectWithKlant[]
+  milestones:    Milestone[]
+  onDatesChange: (projectId: string, start: string | null, deadline: string | null) => void
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function endOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+function toPct(dateStr: string, rangeStart: Date, totalMs: number): number {
+  return ((new Date(dateStr).getTime() - rangeStart.getTime()) / totalMs) * 100
+}
+
+function fmtDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
+
+export function GanttView({ projects, milestones, onDatesChange }: GanttViewProps) {
+  const router = useRouter()
+  const [offsetMonths, setOffsetMonths] = useState(0)
+  const [drag, setDrag]       = useState<DragState | null>(null)
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+
+  // ── Timeline range ──────────────────────────────────────────────────────────
+
+  const today = useMemo(() => new Date(), [])
+
+  const months: Date[] = useMemo(() => {
+    const pivot = new Date(today.getFullYear(), today.getMonth() + offsetMonths, 1)
+    const first = new Date(pivot.getFullYear(), pivot.getMonth() - Math.floor(MONTHS_VISIBLE / 2), 1)
+    return Array.from({ length: MONTHS_VISIBLE }, (_, i) =>
+      new Date(first.getFullYear(), first.getMonth() + i, 1),
+    )
+  }, [today, offsetMonths])
+
+  const rangeStart = useMemo(() => new Date(months[0].getFullYear(), months[0].getMonth(), 1), [months])
+  const rangeEnd   = useMemo(() => endOfMonth(months[months.length - 1]), [months])
+  const totalMs    = useMemo(() => rangeEnd.getTime() - rangeStart.getTime(), [rangeStart, rangeEnd])
+
+  const todayPct = useMemo(
+    () => toPct(today.toISOString().slice(0, 10), rangeStart, totalMs),
+    [today, rangeStart, totalMs],
+  )
+
+  // ── Split projects ─────────────────────────────────────────────────────────
+
+  const withDates    = useMemo(() => projects.filter(p => p.start_date && p.deadline), [projects])
+  const withoutDates = useMemo(() => projects.filter(p => !p.start_date || !p.deadline), [projects])
+
+  // ── Groups per klant ───────────────────────────────────────────────────────
+
+  const groups = useMemo(() => {
+    const map = new Map<string, { label: string; items: ProjectWithKlant[] }>()
+    for (const p of withDates) {
+      const key   = p.klant_id ?? '__intern'
+      const label = p.klanten?.naam ?? 'Intern'
+      if (!map.has(key)) map.set(key, { label, items: [] })
+      map.get(key)!.items.push(p)
+    }
+    return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'nl'))
+  }, [withDates])
+
+  // ── Bar positioning ────────────────────────────────────────────────────────
+
+  function barStyle(p: ProjectWithKlant): { left: string; width: string } | null {
+    const start    = drag?.projectId === p.id ? drag.currentStart    : p.start_date
+    const deadline = drag?.projectId === p.id ? drag.currentDeadline : p.deadline
+    if (!start || !deadline) return null
+
+    const leftPct  = toPct(start,    rangeStart, totalMs)
+    const rightPct = toPct(deadline, rangeStart, totalMs)
+    if (rightPct < 0 || leftPct > 100) return null
+
+    return {
+      left:  `${Math.max(0, leftPct)}%`,
+      width: `${Math.max(0.5, Math.min(100, rightPct) - Math.max(0, leftPct))}%`,
+    }
+  }
+
+  // ── Drag logic ─────────────────────────────────────────────────────────────
+
+  const handleBarMouseDown = useCallback((e: React.MouseEvent, p: ProjectWithKlant) => {
+    if (!p.start_date || !p.deadline) return
+    e.preventDefault()
+    e.stopPropagation()
+    setTooltip(null)
+    setDrag({
+      projectId:       p.id,
+      startX:          e.clientX,
+      origStart:       p.start_date,
+      origDeadline:    p.deadline,
+      currentStart:    p.start_date,
+      currentDeadline: p.deadline,
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!drag) return
+
+    function onMouseMove(e: MouseEvent) {
+      setDrag(prev => {
+        if (!prev || !trackRef.current) return prev
+        const trackWidth = trackRef.current.getBoundingClientRect().width
+        if (trackWidth === 0) return prev
+        const totalDays = totalMs / 86_400_000
+        const daysDelta = Math.round((e.clientX - prev.startX) / trackWidth * totalDays)
+        return {
+          ...prev,
+          currentStart:    addDays(prev.origStart,    daysDelta),
+          currentDeadline: addDays(prev.origDeadline, daysDelta),
+        }
+      })
+    }
+
+    function onMouseUp() {
+      setDrag(prev => {
+        if (prev) onDatesChange(prev.projectId, prev.currentStart, prev.currentDeadline)
+        return null
+      })
+    }
+
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup',   onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup',   onMouseUp)
+    }
+  }, [drag, totalMs, onDatesChange])
+
+  // ── Milestones per project ─────────────────────────────────────────────────
+
+  const milestonesByProject = useMemo(() => {
+    const map: Record<string, Milestone[]> = {}
+    for (const m of milestones) {
+      if (!m.datum) continue
+      if (!map[m.project_id]) map[m.project_id] = []
+      map[m.project_id].push(m)
+    }
+    return map
+  }, [milestones])
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden select-none">
+
+      {/* ── Month header ─────────────────────────────────────────────────── */}
+      <div className="flex shrink-0 border-b border-border bg-bg-1">
+        {/* Navigation + label column */}
+        <div
+          className="shrink-0 border-r border-border flex items-center gap-1 px-3"
+          style={{ width: LABEL_COL_W }}
+        >
+          <button
+            onClick={() => setOffsetMonths(o => o - 1)}
+            className="p-1 rounded hover:bg-bg-3 text-fg-3 hover:text-fg-1 transition-colors"
+            aria-label="Vorige maanden"
+          >
+            <SvgIcon name="chevron-left" size={11} />
+          </button>
+          <button
+            onClick={() => setOffsetMonths(0)}
+            className="text-[11px] text-fg-3 hover:text-fg-1 transition-colors px-1 rounded hover:bg-bg-3"
+          >
+            Nu
+          </button>
+          <button
+            onClick={() => setOffsetMonths(o => o + 1)}
+            className="p-1 rounded hover:bg-bg-3 text-fg-3 hover:text-fg-1 transition-colors"
+            aria-label="Volgende maanden"
+          >
+            <SvgIcon name="chevron-right" size={11} />
+          </button>
+        </div>
+
+        {/* Month labels + track anchor */}
+        <div className="flex flex-1" ref={trackRef}>
+          {months.map((m, i) => {
+            const isCurrent = m.getFullYear() === today.getFullYear() && m.getMonth() === today.getMonth()
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'flex-1 text-center py-2 text-[11px] font-medium border-r border-border/40',
+                  isCurrent ? 'text-fg-1' : 'text-fg-3',
+                )}
+              >
+                {MONTH_NL[m.getMonth()]}
+                {m.getFullYear() !== today.getFullYear() && (
+                  <span className="ml-1 opacity-60">{m.getFullYear()}</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Body ─────────────────────────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+
+        {groups.map(group => (
+          <div key={group.label}>
+
+            {/* Group header */}
+            <div className="flex items-center gap-2 px-4 py-1.5 bg-bg-2/40 border-b border-border/50 sticky top-0 z-10">
+              <span className="text-[11px] font-semibold text-fg-3 uppercase tracking-[0.06em]">
+                {group.label}
+              </span>
+            </div>
+
+            {/* Project rows */}
+            {group.items.map(p => {
+              const cfg        = STATUS_CFG[p.status]
+              const bs         = barStyle(p)
+              const isDragging = drag?.projectId === p.id
+
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center border-b border-border/30 hover:bg-bg-2/20"
+                  style={{ height: 36 }}
+                >
+                  {/* Label column */}
+                  <div
+                    className="shrink-0 flex items-center gap-2 px-4 border-r border-border h-full"
+                    style={{ width: LABEL_COL_W }}
+                  >
+                    <SvgIcon name={cfg.icon} size={12} className={cn(cfg.iconClass, 'shrink-0')} />
+                    <span className="text-[12px] text-fg-1 font-medium truncate leading-none">
+                      {p.naam}
+                    </span>
+                  </div>
+
+                  {/* Track */}
+                  <div className="relative flex-1 h-full">
+                    {/* Month grid lines */}
+                    <div className="absolute inset-0 flex pointer-events-none">
+                      {months.map((_, i) => (
+                        <div key={i} className="flex-1 border-r border-border/15" />
+                      ))}
+                    </div>
+
+                    {/* Today line */}
+                    {todayPct >= 0 && todayPct <= 100 && (
+                      <div
+                        className="absolute top-0 bottom-0 w-px bg-indigo-500/50 pointer-events-none z-10"
+                        style={{ left: `${todayPct}%` }}
+                      />
+                    )}
+
+                    {/* Bar */}
+                    {bs && (
+                      <div
+                        className={cn(
+                          'absolute top-1/2 -translate-y-1/2 h-5 rounded flex items-center px-2',
+                          'text-[11px] font-medium text-white/80 overflow-hidden whitespace-nowrap',
+                          'cursor-grab active:cursor-grabbing transition-opacity',
+                          cfg.barClass,
+                          isDragging && 'opacity-75 shadow-md',
+                        )}
+                        style={bs}
+                        onMouseDown={e => handleBarMouseDown(e, p)}
+                        onMouseEnter={e => { if (!drag) setTooltip({ project: p, x: e.clientX, y: e.clientY }) }}
+                        onMouseMove={e  => { if (!drag) setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null) }}
+                        onMouseLeave={() => setTooltip(null)}
+                        onClick={() => { if (!isDragging) router.push(`/projecten/${p.id}`) }}
+                      >
+                        {p.naam}
+                      </div>
+                    )}
+
+                    {/* Milestone diamonds */}
+                    {(milestonesByProject[p.id] ?? []).map(m => {
+                      const pct = toPct(m.datum!, rangeStart, totalMs)
+                      if (pct < 0 || pct > 100) return null
+                      return (
+                        <div
+                          key={m.id}
+                          title={m.naam}
+                          className="absolute top-1/2 z-20 pointer-events-none"
+                          style={{
+                            left:        `${pct}%`,
+                            width:       8,
+                            height:      8,
+                            marginTop:   -4,
+                            marginLeft:  -4,
+                            background:  m.voltooid ? '#4ade80' : 'rgba(226,226,228,0.85)',
+                            transform:   'rotate(45deg)',
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+
+        {/* ── Zonder planning ──────────────────────────────────────────────── */}
+        {withoutDates.length > 0 && (
+          <div className="border-t border-border mt-1">
+            <div className="px-4 py-2 text-[11px] font-semibold text-fg-3 uppercase tracking-[0.06em]">
+              Zonder planning
+            </div>
+            {withoutDates.map(p => {
+              const cfg = STATUS_CFG[p.status]
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 px-4 py-2 border-b border-border/30 hover:bg-bg-2/30 cursor-pointer"
+                  onClick={() => router.push(`/projecten/${p.id}`)}
+                >
+                  <SvgIcon name={cfg.icon} size={12} className={cn(cfg.iconClass, 'shrink-0')} />
+                  <span className="text-[12px] text-fg-1 font-medium">{p.naam}</span>
+                  {p.klanten && (
+                    <span className="text-[11px] text-fg-3">{p.klanten.naam}</span>
+                  )}
+                  <span className={cn('ml-auto text-[11px] px-2 py-0.5 rounded-full bg-bg-3', cfg.iconClass)}>
+                    {p.status}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+      </div>
+
+      {/* ── Tooltip ───────────────────────────────────────────────────────── */}
+      {tooltip && !drag && (
+        <div
+          className="fixed z-50 pointer-events-none bg-bg-1 border border-border rounded-lg shadow-xl px-3 py-2"
+          style={{ left: tooltip.x + 14, top: tooltip.y - 52 }}
+        >
+          <div className="text-[12px] font-semibold text-fg-1 mb-0.5">{tooltip.project.naam}</div>
+          {tooltip.project.klanten && (
+            <div className="text-[11px] text-fg-3 mb-1">{tooltip.project.klanten.naam}</div>
+          )}
+          <div className="text-[11px] text-fg-2">
+            {tooltip.project.start_date ? fmtDate(tooltip.project.start_date) : '—'}
+            {' → '}
+            {tooltip.project.deadline ? fmtDate(tooltip.project.deadline) : '—'}
+          </div>
+        </div>
+      )}
+
+    </div>
+  )
+}
+```
+
+- [ ] **Step 2: Verify TypeScript compiles**
+
+```bash
+npx tsc --noEmit 2>&1 | head -30
+```
+
+Expected: no new errors.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add components/projecten/GanttView.tsx
+git commit -m "feat(projecten): add GanttView with timeline, groups, bars, drag, milestones"
+```
+
+---
+
+### Task 3: Wire GanttView into ProjectenModule
+
+**Files:**
+- Modify: `components/projecten/ProjectenModule.tsx`
+
+- [ ] **Step 1: Replace ProjectenModule with view-toggling version**
+
+```tsx
+// components/projecten/ProjectenModule.tsx
+'use client'
+
+import { useState, useMemo, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { SvgIcon } from '@/components/ui/SvgIcon'
+import { Button } from '@/components/ui/Button'
+import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
+import { KanbanBoard as SharedKanbanBoard } from '@/components/ui/KanbanBoard'
+import { ProjectKaart } from './ProjectKaart'
+import { GanttView } from './GanttView'
+import { NieuwProjectDrawer } from './NieuwProjectDrawer'
+import type { Project, Milestone } from '@/types/project'
+import { PROJECT_COLUMNS } from '@/types/project'
+import { moveProject, updateProject } from '@/app/(app)/projecten/actions'
+import { FilePlus } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+type View = 'kanban' | 'gantt'
+
+const VIEWS: { key: View; iconName: string; label: string }[] = [
+  { key: 'kanban', iconName: 'chart-kanban', label: 'Kanban' },
+  { key: 'gantt',  iconName: 'chart-gantt',  label: 'Gantt'  },
+]
+
+interface ProjectenModuleProps {
+  projects:   Array<Project & { klanten?: { id: string; naam: string } | null }>
+  tasks:      Array<{ project_id: string; status: string }>
+  milestones: Milestone[]
+}
+
+export function ProjectenModule({ projects, tasks: taskSummary, milestones }: ProjectenModuleProps) {
+  const router = useRouter()
+  const [view, setView]                         = useState<View>('kanban')
+  const [searchQuery, setSearchQuery]           = useState('')
+  const [nieuwProjectOpen, setNieuwProjectOpen] = useState(false)
+  const [projectKey, setProjectKey]             = useState(0)
+  const [, startTransition]                     = useTransition()
+  const [localProjects, setLocalProjects]       = useState(projects)
+
+  function handleMoveProject(projectId: string, toStatus: string) {
+    setLocalProjects(prev => prev.map(p =>
+      p.id === projectId ? { ...p, status: toStatus as Project['status'] } : p,
+    ))
+    startTransition(() => { moveProject(projectId, toStatus) })
+  }
+
+  function handleDatesChange(projectId: string, start: string | null, deadline: string | null) {
+    setLocalProjects(prev => prev.map(p =>
+      p.id === projectId ? { ...p, start_date: start, deadline } : p,
+    ))
+    startTransition(() => { updateProject(projectId, { start_date: start, deadline }) })
+  }
+
+  const taskCountByProject = useMemo(() => {
+    const counts: Record<string, { total: number; done: number }> = {}
+    for (const t of taskSummary) {
+      if (!counts[t.project_id]) counts[t.project_id] = { total: 0, done: 0 }
+      counts[t.project_id].total++
+      if (t.status === 'klaar') counts[t.project_id].done++
+    }
+    return counts
+  }, [taskSummary])
+
+  const klanten = localProjects
+    .filter(p => p.klanten)
+    .map(p => ({ id: p.klanten!.id, naam: p.klanten!.naam }))
+
+  const filteredProjects = localProjects.filter(p => {
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    return p.naam.toLowerCase().includes(q) || p.klanten?.naam?.toLowerCase().includes(q)
+  })
+
+  const isEmpty = localProjects.length === 0
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <PageHeader
+        title="Projecten"
+        icon={<SvgIcon name="chart-kanban" size={16} className="text-fg-1 shrink-0" />}
+        actions={
+          <>
+            <div className="flex items-center gap-1.5 bg-bg-3 rounded-full px-3 h-7 w-[220px]">
+              <SvgIcon name="magnifying-glass" size={13} className="text-fg-3 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Zoek een project..."
+                aria-label="Zoek een project"
+                className="bg-transparent text-[12px] text-fg-1 placeholder:text-fg-3 outline-none flex-1 min-w-0"
+              />
+            </div>
+            <Button
+              size="sm"
+              onClick={() => { setProjectKey(k => k + 1); setNieuwProjectOpen(true) }}
+              className="gap-1.5"
+            >
+              <FilePlus size={13} />
+              Nieuw project
+            </Button>
+          </>
+        }
+        toolbar={
+          <PageToolbar>
+            {VIEWS.map(v => (
+              <button
+                key={v.key}
+                onClick={() => setView(v.key)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium transition-colors',
+                  view === v.key ? 'bg-bg-3 text-fg-1' : 'text-fg-3 hover:text-fg-2',
+                )}
+              >
+                <SvgIcon name={v.iconName} size={13} />
+                {v.label}
+              </button>
+            ))}
+          </PageToolbar>
+        }
+      />
+
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {isEmpty ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+            <SvgIcon name="chart-kanban" size={32} className="text-fg-disabled" />
+            <div className="flex flex-col gap-1">
+              <span className="text-[14px] font-medium text-fg-2">Nog geen projecten</span>
+              <span className="text-[12px] text-fg-3">Maak je eerste project aan om te beginnen.</span>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => { setProjectKey(k => k + 1); setNieuwProjectOpen(true) }}
+              className="gap-1.5 mt-2"
+            >
+              <FilePlus size={13} />
+              Nieuw project
+            </Button>
+          </div>
+        ) : view === 'kanban' ? (
+          <SharedKanbanBoard
+            columns={PROJECT_COLUMNS.map(c => ({ ...c, key: c.status }))}
+            items={filteredProjects}
+            getItemId={p => p.id}
+            getColKey={p => p.status}
+            renderCard={(project, isDragging) => (
+              <ProjectKaart
+                project={project}
+                taskCounts={taskCountByProject[project.id] ?? { total: 0, done: 0 }}
+                isDragging={isDragging}
+                onClick={() => router.push(`/projecten/${project.id}`)}
+              />
+            )}
+            onMove={handleMoveProject}
+            onAddItem={() => { setProjectKey(k => k + 1); setNieuwProjectOpen(true) }}
+            addItemLabel="Nieuw project"
+          />
+        ) : (
+          <GanttView
+            projects={filteredProjects}
+            milestones={milestones}
+            onDatesChange={handleDatesChange}
+          />
+        )}
+      </div>
+
+      <NieuwProjectDrawer
+        key={`project-${projectKey}`}
+        open={nieuwProjectOpen}
+        onOpenChange={setNieuwProjectOpen}
+        klanten={klanten}
+      />
+    </div>
+  )
+}
+```
+
+- [ ] **Step 2: Verify TypeScript compiles**
+
+```bash
+npx tsc --noEmit 2>&1 | head -30
+```
+
+Expected: no new errors.
+
+- [ ] **Step 3: Start dev server and verify in browser**
+
+```bash
+npm run dev
+```
+
+Open http://localhost:3000/projecten. Verify:
+- Toolbar shows "Kanban" and "Gantt" toggle buttons
+- Kanban view still works (click Kanban button)
+- Gantt view shows timeline header with 6 months
+- Projects with `start_date` + `deadline` appear as bars
+- Projects without dates appear in "Zonder planning" section
+- Today line (vertical indigo line) is visible
+- Clicking a bar navigates to `/projecten/[id]`
+- Hovering a bar shows tooltip with naam, klant, datums
+- Dragging a bar moves it optimistically
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add components/projecten/ProjectenModule.tsx
+git commit -m "feat(projecten): wire GanttView into ProjectenModule with Kanban/Gantt toggle"
+```
