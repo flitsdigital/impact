@@ -15,6 +15,7 @@ import type {
   ProjectWithRelations,
   ProjectDocument,
   ProjectAssigneeProfile,
+  Task,
   TaskWithRelations,
   TaskStatus,
   TaskPriority,
@@ -41,15 +42,15 @@ import { DocumentIcon } from '@/components/projecten/DocumentIcon'
 type Tab = 'overzicht' | 'taken' | 'activiteit'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'overzicht',  label: 'Overzicht',  icon: 'list-check' },
-  { id: 'taken',      label: 'Taken',      icon: 'list-check-1' },
+  { id: 'overzicht', label: 'Overzicht', icon: 'list-check' },
+  { id: 'taken', label: 'Taken', icon: 'list-check-1' },
   { id: 'activiteit', label: 'Activiteit', icon: 'chart-gantt' },
 ]
 
 const PRIORITY_ICON: Record<string, string> = {
   urgent: 'triangle-exclamation',
-  hoog:   'signal-bars',
-  laag:   'scrubber',
+  hoog: 'signal-bars',
+  laag: 'scrubber',
 }
 
 function fmtDate(dateStr: string): string {
@@ -62,8 +63,8 @@ function fmtDate(dateStr: string): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 interface ProjectDetailModuleProps {
-  project:     ProjectWithRelations
-  tasks:       TaskWithRelations[]
+  project: ProjectWithRelations
+  tasks: TaskWithRelations[]
   teamMembers: TeamMember[]
 }
 
@@ -73,26 +74,26 @@ export function ProjectDetailModule({
   teamMembers,
 }: ProjectDetailModuleProps) {
   const router = useRouter()
-  const [tab, setTab]                           = useState<Tab>('overzicht')
-  const [searchQuery, setSearchQuery]           = useState('')
-  const [filterPriority, setFilterPriority]     = useState<string>('all')
-  const [selectedTask, setSelectedTask]         = useState<TaskWithRelations | null>(null)
-  const [detailOpen, setDetailOpen]             = useState(false)
-  const [nieuweTaakOpen, setNieuweTaakOpen]     = useState(false)
-  const [bijlageOpen, setBijlageOpen]           = useState(false)
-  const [assigneesOpen, setAssigneesOpen]       = useState(false)
-  const [statusOpen, setStatusOpen]             = useState(false)
+  const [tab, setTab] = useState<Tab>('overzicht')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterPriority, setFilterPriority] = useState<string>('all')
+  const [selectedTask, setSelectedTask] = useState<TaskWithRelations | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [nieuweTaakOpen, setNieuweTaakOpen] = useState(false)
+  const [bijlageOpen, setBijlageOpen] = useState(false)
+  const [assigneesOpen, setAssigneesOpen] = useState(false)
+  const [statusOpen, setStatusOpen] = useState(false)
   const [defaultTaskStatus, setDefaultTaskStatus] = useState<TaskStatus>('todo')
-  const [taakKey, setTaakKey]                   = useState(0)
-  const [, startTransition]                     = useTransition()
+  const [taakKey, setTaakKey] = useState(0)
+  const [, startTransition] = useTransition()
 
-  const [project, setProject]       = useState(initialProject)
+  const [project, setProject] = useState(initialProject)
   const [localTasks, setLocalTasks] = useState<TaskWithRelations[]>(initialTasks)
 
   // Inline date editing state
-  const [editingDate, setEditingDate]   = useState(false)
+  const [editingDate, setEditingDate] = useState(false)
   const [startDateVal, setStartDateVal] = useState(project.start_date ?? '')
-  const [deadlineVal, setDeadlineVal]   = useState(project.deadline ?? '')
+  const [deadlineVal, setDeadlineVal] = useState(project.deadline ?? '')
 
   const isFavorite = project.favorites?.length > 0
 
@@ -134,6 +135,20 @@ export function ProjectDetailModule({
     setNieuweTaakOpen(true)
   }
 
+  function handleTaskCreated(task: Task) {
+    if (task.project_id !== project.id) return
+    const newTask: TaskWithRelations = {
+      ...task,
+      project:       { id: project.id, naam: project.naam, kleur: project.kleur },
+      assignees:     [],
+      labels:        [],
+      subtasks:      [],
+      subtask_done:  0,
+      subtask_total: 0,
+    }
+    setLocalTasks((prev) => [...prev, newTask])
+  }
+
   async function handleToggleFavorite() {
     const wasFav = isFavorite
     setProject((p) => ({
@@ -147,13 +162,13 @@ export function ProjectDetailModule({
     setProject((p) => ({
       ...p,
       start_date: startDateVal || null,
-      deadline:   deadlineVal || null,
+      deadline: deadlineVal || null,
     }))
     setEditingDate(false)
     startTransition(() => {
       updateProject(project.id, {
         start_date: startDateVal || null,
-        deadline:   deadlineVal || null,
+        deadline: deadlineVal || null,
       })
     })
   }
@@ -181,9 +196,9 @@ export function ProjectDetailModule({
 
   // ── Status / priority info ──────────────────────────────────────────────────
 
-  const statusCol   = PROJECT_COLUMNS.find((c) => c.status === project.status)
-  const prioConfig  = project.prioriteit !== 'normaal' ? PRIORITY_CONFIG[project.prioriteit] : null
-  const prioIcon    = project.prioriteit !== 'normaal' ? PRIORITY_ICON[project.prioriteit] : null
+  const statusCol = PROJECT_COLUMNS.find((c) => c.status === project.status)
+  const prioConfig = project.prioriteit !== 'normaal' ? PRIORITY_CONFIG[project.prioriteit] : null
+  const prioIcon = project.prioriteit !== 'normaal' ? PRIORITY_ICON[project.prioriteit] : null
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -281,7 +296,7 @@ export function ProjectDetailModule({
         {tab === 'overzicht' && (
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* Project overview header */}
-            <div className="px-8 pt-6 pb-4 shrink-0 flex flex-col gap-3">
+            <div className="w-full max-w-8/12 mx-auto px-8 pt-6 pb-4 shrink-0 flex flex-col gap-3">
               {/* Project number */}
               <span className="text-[12px] font-mono text-fg-3">
                 FLT-{project.project_number}
@@ -563,6 +578,7 @@ export function ProjectDetailModule({
         projects={[initialProject]}
         defaultStatus={defaultTaskStatus}
         defaultProjectId={initialProject.id}
+        onCreated={handleTaskCreated}
       />
 
       {/* ── Modals ── */}
@@ -617,7 +633,7 @@ function TakenLijstView({
         </thead>
         <tbody>
           {tasks.map((task) => {
-            const prio   = PRIORITY_CONFIG[task.prioriteit]
+            const prio = PRIORITY_CONFIG[task.prioriteit]
             const status = KANBAN_COLUMNS.find((c) => c.status === task.status)
             return (
               <tr

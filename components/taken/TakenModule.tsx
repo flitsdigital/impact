@@ -8,7 +8,7 @@ import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { KanbanBoard } from '@/components/projecten/KanbanBoard'
 import { TaakDetailDrawer } from '@/components/projecten/TaakDetailDrawer'
 import { NieuweTaakDrawer } from '@/components/projecten/NieuweTaakDrawer'
-import type { Project, TaskWithRelations, TaskStatus, TaskPriority } from '@/types/project'
+import type { Project, Task, TaskWithRelations, TaskStatus, TaskPriority } from '@/types/project'
 import { PRIORITY_CONFIG, KANBAN_COLUMNS } from '@/types/project'
 import type { TeamMember } from '@/types/team'
 import { moveTask } from '@/app/(app)/projecten/actions'
@@ -47,6 +47,20 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
     if (!task || task.status === toStatus) return
     setLocalTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: toStatus } : t))
     startTransition(() => { moveTask(taskId, toStatus) })
+  }
+
+  function handleTaskCreated(task: Task) {
+    const proj = projects.find((p) => p.id === task.project_id)
+    const newTask: TaskWithRelations = {
+      ...task,
+      project:       proj ? { id: proj.id, naam: proj.naam, kleur: proj.kleur } : undefined,
+      assignees:     [],
+      labels:        [],
+      subtasks:      [],
+      subtask_done:  0,
+      subtask_total: 0,
+    }
+    setLocalTasks((prev) => [...prev, newTask])
   }
 
   const filteredTasks = useMemo(() => {
@@ -236,6 +250,7 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
         projects={projects}
         defaultStatus={defaultTaskStatus}
         defaultProjectId={filterProject !== 'all' ? filterProject : undefined}
+        onCreated={handleTaskCreated}
       />
     </div>
   )

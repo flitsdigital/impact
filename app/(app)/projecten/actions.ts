@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import type { TaskStatus, TaskPriority } from '@/types/project'
+import type { Task, TaskStatus, TaskPriority } from '@/types/project'
 
 // ─── Projects ─────────────────────────────────────────────────────────────────
 
@@ -136,7 +136,7 @@ export async function deleteProject(projectId: string): Promise<{ error?: string
 export async function createTask(
   _prev: { error?: string } | null,
   formData: FormData,
-): Promise<{ error?: string; id?: string }> {
+): Promise<{ error?: string; id?: string; task?: Task }> {
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
@@ -152,14 +152,14 @@ export async function createTask(
       deadline:      (formData.get('deadline') as string) || null,
       schatting_uren: formData.get('schatting_uren') ? Number(formData.get('schatting_uren')) : null,
     })
-    .select('id')
+    .select('*')
     .single()
 
   if (error) return { error: error.message }
 
   revalidatePath('/projecten')
   revalidatePath('/taken')
-  return { id: data.id }
+  return { id: data.id, task: data as Task }
 }
 
 export async function updateTask(

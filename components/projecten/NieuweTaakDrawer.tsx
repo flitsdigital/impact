@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Drawer } from 'vaul'
 import { cn } from '@/lib/utils'
-import type { Project, TaskStatus, TaskPriority } from '@/types/project'
+import type { Project, Task, TaskStatus, TaskPriority } from '@/types/project'
 import { PRIORITY_CONFIG, KANBAN_COLUMNS } from '@/types/project'
 import { createTask } from '@/app/(app)/projecten/actions'
 import { X } from 'lucide-react'
@@ -14,6 +14,7 @@ interface NieuweTaakDrawerProps {
   projects: Project[]
   defaultStatus?: TaskStatus
   defaultProjectId?: string
+  onCreated?: (task: Task) => void
 }
 
 export function NieuweTaakDrawer({
@@ -22,6 +23,7 @@ export function NieuweTaakDrawer({
   projects,
   defaultStatus = 'todo',
   defaultProjectId,
+  onCreated,
 }: NieuweTaakDrawerProps) {
   const [titel, setTitel] = useState('')
   const [beschrijving, setBeschrijving] = useState('')
@@ -56,6 +58,7 @@ export function NieuweTaakDrawer({
     if (result.error) {
       setError(result.error)
     } else {
+      if (result.task) onCreated?.(result.task)
       onOpenChange(false)
     }
   }
