@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { PageHeader } from "@/components/layout/PageHeader"
+import { Card, CardTitle, CardDescription } from "@/components/ui/Card"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -22,22 +23,19 @@ export default async function DashboardPage() {
             { label: "Verlopen facturen", value: "—" },
             { label: "Posts te doen", value: "—" },
           ].map((tile) => (
-            <div
-              key={tile.label}
-              className="p-4 rounded-lg bg-bg-0 border border-border-subtle"
-            >
-              <p className="m-0 mb-1 text-[13px] font-medium text-fg-2">{tile.label}</p>
-              <p className="m-0 text-2xl font-bold text-fg-1 tracking-tight">{tile.value}</p>
-            </div>
+            <Card key={tile.label} className="gap-1 bg-bg-0">
+              <CardDescription className="text-[13px] font-medium text-fg-2">{tile.label}</CardDescription>
+              <CardTitle className="text-2xl font-bold text-fg-1 tracking-tight">{tile.value}</CardTitle>
+            </Card>
           ))}
         </div>
 
         {/* Coming soon */}
-        <div className="p-6 rounded-lg bg-bg-0 border border-border-subtle text-center">
+        <Card className="bg-bg-0 p-6 text-center">
           <p className="m-0 text-[13px] text-fg-3">
             Dashboard widgets worden gebouwd in Fase 3 — na klantenbeheer.
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   )

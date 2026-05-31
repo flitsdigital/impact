@@ -3,7 +3,13 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Search, ChevronDown, LogOut, User, Zap } from "lucide-react"
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/DropdownMenu"
 import { createClient } from "@/lib/supabase/client"
 import { Avatar } from "@/components/ui/Avatar"
 import { useAuthStore } from "@/store/auth"
@@ -49,47 +55,33 @@ export function TopBar() {
 
       {/* Right — user menu */}
       <div className="flex items-center justify-end">
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <button type="button" className="flex items-center gap-1.5 rounded-md px-1.5 py-1 border-none bg-transparent cursor-pointer text-fg-2 transition-colors hover:bg-bg-3">
               <Avatar src={avatarUrl} name={displayName} size={22} />
               <ChevronDown size={10} className="text-fg-2" />
             </button>
-          </DropdownMenu.Trigger>
+          </DropdownMenuTrigger>
 
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              align="end"
-              sideOffset={6}
-              className="min-w-[180px] bg-bg-1 border border-border-subtle rounded-md p-1 z-50"
-              style={{ boxShadow: "var(--elev-popover)" }}
-            >
-              <div className="px-2.5 py-2 border-b border-border-subtle mb-1">
-                <p className="m-0 text-[13px] font-medium text-fg-1">{displayName}</p>
-                <p className="m-0 mt-0.5 text-[12px] text-fg-3">{user?.email}</p>
-              </div>
+          <DropdownMenuContent align="end">
+            <div className="px-2.5 py-2 border-b border-border-subtle mb-1">
+              <p className="m-0 text-[13px] font-medium text-fg-1">{displayName}</p>
+              <p className="m-0 mt-0.5 text-[12px] text-fg-3">{user?.email}</p>
+            </div>
 
-              <DropdownMenu.Item asChild>
-                <button className="dropdown-item w-full flex items-center gap-2 h-8 px-2.5 rounded-md border-none bg-transparent cursor-pointer text-[13px] font-medium text-fg-1 text-left outline-none transition-colors hover:bg-bg-3">
-                  <User size={14} />
-                  Profiel
-                </button>
-              </DropdownMenu.Item>
+            <DropdownMenuItem>
+              <User size={14} />
+              Profiel
+            </DropdownMenuItem>
 
-              <DropdownMenu.Separator className="h-px bg-border-subtle my-1" />
+            <DropdownMenuSeparator />
 
-              <DropdownMenu.Item asChild>
-                <button
-                  className="dropdown-item w-full flex items-center gap-2 h-8 px-2.5 rounded-md border-none bg-transparent cursor-pointer text-[13px] font-medium text-orange-500 text-left outline-none transition-colors hover:bg-bg-3"
-                  onClick={handleSignOut}
-                >
-                  <LogOut size={14} />
-                  Uitloggen
-                </button>
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
+            <DropdownMenuItem onSelect={handleSignOut} className="text-orange-500 focus:text-orange-500">
+              <LogOut size={14} />
+              Uitloggen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )

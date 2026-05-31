@@ -84,13 +84,15 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
             <ChevronRight size={10} className="text-fg-disabled" />
             <span className="text-fg-2">Nieuw project</span>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => onOpenChange(false)}
-            className="p-1 rounded text-fg-3 hover:text-fg-1 hover:bg-bg-4 transition-colors"
+            aria-label="Sluiten"
+            className="text-fg-3"
           >
             <X size={15} />
-          </button>
+          </Button>
         </div>
 
         {/* ── Body ── */}

@@ -1,25 +1,10 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { PostStatus, PostType } from '@/types/post'
+import { STATUS_LABEL, STATUS_COLOR } from '@/types/post'
 import type { TeamMember } from '@/types/team'
 
-// ─── Status / type labels ─────────────────────────────────────────────────────
-
-const STATUS_LABEL: Record<PostStatus, string> = {
-  te_doen:             'Te doen',
-  bezig:               'Bezig',
-  klaar_voor_feedback: 'Klaar voor feedback',
-  akkoord:             'Akkoord',
-  gepost:              'Gepost',
-}
-
-const STATUS_COLOR: Record<PostStatus, string> = {
-  te_doen:             '#6b7280',
-  bezig:               '#f97316',
-  klaar_voor_feedback: '#3b82f6',
-  akkoord:             '#a855f7',
-  gepost:              '#22c55e',
-}
+// ─── Type labels ──────────────────────────────────────────────────────────────
 
 const TYPE_LABEL: Record<PostType, string> = {
   foto:     'Foto',
@@ -63,118 +48,46 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
   const type       = post.type as PostType
 
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        background: '#0A0A0B',
-        color: '#E8E8E8',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '0 0 48px',
-      }}
-    >
+    <div className="min-h-[100dvh] bg-[#0A0A0B] text-[#E8E8E8] [font-family:system-ui,-apple-system,sans-serif] flex flex-col items-center pb-12">
       {/* ── Top bar ─────────────────────────────────────────────── */}
-      <div
-        style={{
-          width: '100%',
-          borderBottom: '1px solid #1D1E1F',
-          padding: '14px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: '#0F0F10',
-        }}
-      >
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#E8E8E8', letterSpacing: '-0.01em' }}>
+      <div className="w-full border-b border-[#1D1E1F] px-6 py-[14px] flex items-center justify-between bg-[#0F0F10]">
+        <span className="text-[13px] font-semibold text-[#E8E8E8] tracking-[-0.01em]">
           Flits Digital
         </span>
-        <span style={{ fontSize: 12, color: '#6b7280' }}>Content preview</span>
+        <span className="text-[12px] text-[#6b7280]">Content preview</span>
       </div>
 
       {/* ── Card ────────────────────────────────────────────────── */}
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 560,
-          margin: '32px 16px 0',
-          background: '#0F0F10',
-          border: '1px solid #1D1E1F',
-          borderRadius: 14,
-          overflow: 'hidden',
-        }}
-      >
+      <div className="w-full max-w-[560px] mt-8 mx-4 bg-[#0F0F10] border border-[#1D1E1F] rounded-[14px] overflow-hidden">
         {/* Media */}
         {post.media_url && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={post.media_url}
             alt="Post media"
-            style={{ width: '100%', display: 'block', maxHeight: 420, objectFit: 'cover' }}
+            className="w-full block max-h-[420px] object-cover"
           />
         )}
 
         {/* Body */}
-        <div style={{ padding: '20px 24px' }}>
+        <div className="px-6 py-5">
           {/* Status + Type row */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              marginBottom: 16,
-              flexWrap: 'wrap',
-            }}
-          >
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
             <span
+              className="inline-flex items-center gap-[5px] h-6 px-2.5 rounded-full text-[11px] font-medium"
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-                height: 24,
-                padding: '0 10px',
-                borderRadius: 999,
                 border: `1px solid ${STATUS_COLOR[status]}40`,
                 background: `${STATUS_COLOR[status]}18`,
-                fontSize: 11,
-                fontWeight: 500,
                 color: STATUS_COLOR[status],
               }}
             >
               {STATUS_LABEL[status]}
             </span>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                height: 24,
-                padding: '0 10px',
-                borderRadius: 999,
-                border: '1px solid #2a2a2b',
-                background: '#1a1a1b',
-                fontSize: 11,
-                fontWeight: 500,
-                color: '#9ca3af',
-              }}
-            >
+            <span className="inline-flex items-center h-6 px-2.5 rounded-full border border-[#2a2a2b] bg-[#1a1a1b] text-[11px] font-medium text-[#9ca3af]">
               {TYPE_LABEL[type]}
             </span>
             {klantNaam && (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  height: 24,
-                  padding: '0 10px',
-                  borderRadius: 999,
-                  border: '1px solid #2a2a2b',
-                  background: '#1a1a1b',
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: '#9ca3af',
-                }}
-              >
+              <span className="inline-flex items-center h-6 px-2.5 rounded-full border border-[#2a2a2b] bg-[#1a1a1b] text-[11px] font-medium text-[#9ca3af]">
                 {klantNaam}
               </span>
             )}
@@ -182,73 +95,39 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
 
           {/* Caption */}
           {post.caption ? (
-            <p
-              style={{
-                fontSize: 14,
-                lineHeight: 1.65,
-                color: '#d1d5db',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                margin: '0 0 16px',
-              }}
-            >
+            <p className="text-[14px] leading-[1.65] text-[#d1d5db] whitespace-pre-wrap break-words mb-4">
               {post.caption}
             </p>
           ) : (
-            <p style={{ fontSize: 13, color: '#6b7280', fontStyle: 'italic', margin: '0 0 16px' }}>
+            <p className="text-[13px] text-[#6b7280] italic mb-4">
               Geen caption toegevoegd.
             </p>
           )}
 
           {/* Date + Assignees */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: 14,
-              borderTop: '1px solid #1D1E1F',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
+          <div className="flex items-center justify-between pt-[14px] border-t border-[#1D1E1F] gap-3 flex-wrap">
             {scheduledDate ? (
-              <span style={{ fontSize: 12, color: '#6b7280' }}>{scheduledDate}</span>
+              <span className="text-[12px] text-[#6b7280]">{scheduledDate}</span>
             ) : (
-              <span style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic' }}>Geen datum gepland</span>
+              <span className="text-[12px] text-[#6b7280] italic">Geen datum gepland</span>
             )}
 
             {/* Assignee avatars */}
             {assignees.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div className="flex items-center">
                 {assignees.slice(0, 4).map((a, i) => (
                   <div
                     key={a.id}
                     title={a.full_name ?? a.email ?? undefined}
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: '50%',
-                      background: '#2a2a2b',
-                      border: '2px solid #0F0F10',
-                      marginLeft: i > 0 ? -8 : 0,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: '#9ca3af',
-                      zIndex: assignees.length - i,
-                      position: 'relative',
-                    }}
+                    className="w-[26px] h-[26px] rounded-full bg-[#2a2a2b] border-2 border-[#0F0F10] overflow-hidden flex items-center justify-center text-[10px] font-semibold text-[#9ca3af] relative"
+                    style={{ marginLeft: i > 0 ? -8 : 0, zIndex: assignees.length - i }}
                   >
                     {a.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={a.avatar_url}
                         alt={a.full_name ?? ''}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       (a.full_name ?? a.email ?? '?').charAt(0).toUpperCase()
@@ -256,23 +135,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
                   </div>
                 ))}
                 {assignees.length > 4 && (
-                  <div
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: '50%',
-                      background: '#2a2a2b',
-                      border: '2px solid #0F0F10',
-                      marginLeft: -8,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 10,
-                      color: '#9ca3af',
-                      position: 'relative',
-                      zIndex: 0,
-                    }}
-                  >
+                  <div className="w-[26px] h-[26px] rounded-full bg-[#2a2a2b] border-2 border-[#0F0F10] -ml-2 flex items-center justify-center text-[10px] text-[#9ca3af] relative z-0">
                     +{assignees.length - 4}
                   </div>
                 )}
@@ -283,7 +146,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* ── Footer ──────────────────────────────────────────────── */}
-      <p style={{ marginTop: 32, fontSize: 12, color: '#4b5563' }}>
+      <p className="mt-8 text-[12px] text-[#4b5563]">
         Gedeeld via Flits Digital CRM
       </p>
     </div>

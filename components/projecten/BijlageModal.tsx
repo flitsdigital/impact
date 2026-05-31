@@ -4,6 +4,7 @@ import { useState, useRef, useTransition } from 'react'
 import { X, Link2, Upload, Trash2, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
+import { Button } from '@/components/ui/Button'
 import { DocumentIcon } from '@/components/projecten/DocumentIcon'
 import type { ProjectDocument } from '@/types/project'
 import { addProjectDocument, deleteProjectDocument, uploadProjectFile } from '@/app/(app)/projecten/actions'
@@ -134,13 +135,15 @@ export function BijlageModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <span className="text-[14px] font-semibold text-fg-1">Bijlagen beheren</span>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => onOpenChange(false)}
-            className="p-1 rounded text-fg-3 hover:text-fg-1 hover:bg-bg-3 transition-colors"
+            aria-label="Sluiten"
+            className="text-fg-3"
           >
             <X size={15} />
-          </button>
+          </Button>
         </div>
 
         {/* Tab switcher */}
@@ -198,14 +201,14 @@ export function BijlageModal({
                 />
               </div>
               {error && <p className="text-[11px] text-red-400">{error}</p>}
-              <button
-                type="button"
+              <Button
+                size="sm"
                 onClick={handleAddLink}
                 disabled={!naam.trim() || !url.trim()}
-                className="self-start px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[12px] font-medium rounded transition-colors"
+                className="self-start"
               >
                 Toevoegen
-              </button>
+              </Button>
             </div>
           )}
 
@@ -267,13 +270,15 @@ export function BijlageModal({
                     {doc.naam}
                     <ExternalLink size={10} className="shrink-0 opacity-50" />
                   </a>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => handleDeleteDoc(doc.id)}
-                    className="p-1 rounded text-fg-disabled hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                    aria-label="Bijlage verwijderen"
+                    className="text-fg-disabled hover:text-red-400 opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 size={12} />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>

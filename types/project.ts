@@ -177,3 +177,11 @@ export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: strin
   normaal: { label: 'Normaal',  color: '#919193', bg: 'rgba(145,145,147,0.12)' },
   laag:    { label: 'Laag',     color: '#60a5fa', bg: 'rgba(96,165,250,0.12)' },
 }
+
+// Icon per prioriteit — matcht de Figma. 'normaal' toont geen icoon (zie callers).
+export const PRIORITY_ICON: Record<TaskPriority, string> = {
+  urgent:  'triangle-exclamation',
+  hoog:    'signal-bars',
+  normaal: 'circle-dashed',
+  laag:    'scrubber',
+}

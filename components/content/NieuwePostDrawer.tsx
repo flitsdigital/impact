@@ -14,28 +14,9 @@ import { SvgIcon }  from '@/components/ui/SvgIcon'
 import { cn }          from '@/lib/utils'
 import { createPost, updatePost }  from '@/app/(app)/content/actions'
 import type { Post, PostStatus, PostType } from '@/types/post'
+import { STATUS_ICON, STATUS_LABEL, STATUS_ORDER } from '@/types/post'
 import type { Klant }  from '@/types/klant'
 import type { TeamMember } from '@/types/team'
-
-// ─── Status icon names (shared with ContentModule) ────────────────────────────
-
-export const STATUS_ICON: Record<PostStatus, string> = {
-  te_doen:             'circle-dashed',
-  bezig:               'circle-notch',
-  klaar_voor_feedback: 'circle',
-  akkoord:             'scrubber',
-  gepost:              'circle-check',
-}
-
-export const STATUS_LABEL: Record<PostStatus, string> = {
-  te_doen:             'Te doen',
-  bezig:               'Bezig',
-  klaar_voor_feedback: 'Klaar voor feedback',
-  akkoord:             'Akkoord',
-  gepost:              'Gepost',
-}
-
-const STATUS_ORDER: PostStatus[] = ['te_doen', 'bezig', 'klaar_voor_feedback', 'akkoord', 'gepost']
 
 const TYPE_OPTIONS: { value: PostType; label: string; iconName: string }[] = [
   { value: 'foto',     label: 'Foto',     iconName: 'image-square' },
@@ -358,21 +339,21 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
             </div>
             <div className="flex items-center gap-1">
               {isEdit && (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={copyPreviewLink}
                   className={cn(
-                    'h-7 rounded-full border border-border bg-secondary px-2.5 text-xs flex items-center gap-1.5 transition-colors',
-                    linkCopied
-                      ? 'text-green-500 border-green-500/30'
-                      : 'text-muted-foreground hover:text-foreground hover:border-ring',
+                    'rounded-full gap-1.5',
+                    linkCopied && 'text-green-500 border-green-500/30 hover:text-green-500',
                   )}
                 >
                   {linkCopied
                     ? <><SvgIcon name="check" size={11} />Gekopieerd!</>
                     : 'Deel link'
                   }
-                </button>
+                </Button>
               )}
               <DrawerClose asChild>
                 <Button variant="ghost" size="icon-sm" type="button" className="text-muted-foreground">

@@ -4,10 +4,19 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { toast } from 'sonner'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/Dialog'
 import { cn } from '@/lib/utils'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { toggleInvoiceRecord, cycleFactuurStatus } from '@/app/(app)/timeline/actions'
 import type { KlantBilling, ComputedInvoice, FactuurStatus } from '@/types/factuur'
+import { FACTUUR_STATUS_NEXT, FACTUUR_STATUS_CONFIG } from '@/types/factuur'
 import { UserRoundPlus } from 'lucide-react'
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
@@ -233,6 +242,7 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'actief' | 'gepauzeerd'>('all')
   const [horizon, setHorizon] = useState<26 | 52>(26)
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null)
+  const [confirmUnmark, setConfirmUnmark] = useState<{ klantId: string; dateStr: string } | null>(null)
   const [, startTransition] = useTransition()
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -335,9 +345,16 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
   // ── Toggle invoiced (recurring) ─────────────────────────────────────────────
 
   function handleToggle(klantId: string, dateStr: string, currentInvoiced: boolean) {
+    // Un-marking is destructive → vraag eerst om bevestiging via een dialog.
     if (currentInvoiced) {
-      if (!window.confirm('Wil je de facturatie-markering voor deze datum verwijderen?')) return
+      setTooltip(null)
+      setConfirmUnmark({ klantId, dateStr })
+      return
     }
+    applyToggle(klantId, dateStr, currentInvoiced)
+  }
+
+  function applyToggle(klantId: string, dateStr: string, currentInvoiced: boolean) {
     const newVal = !currentInvoiced
 
     // Optimistic update
@@ -371,10 +388,7 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
   // ── Cycle factuur status (project/oneoff) ───────────────────────────────────
 
   function handleCycleStatus(factuurId: string, klantId: string, currentStatus: FactuurStatus) {
-    const NEXT: Record<FactuurStatus, FactuurStatus> = {
-      planned: 'sent', sent: 'paid', paid: 'planned', overdue: 'sent',
-    }
-    const newStatus = NEXT[currentStatus]
+    const newStatus = FACTUUR_STATUS_NEXT[currentStatus]
 
     setKlanten((prev) => prev.map((k) => {
       if (k.id !== klantId) return k
@@ -830,6 +844,32 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
           )}
         </div>
       )}
+
+      {/* Bevestiging bij het verwijderen van een facturatie-markering */}
+      <Dialog open={!!confirmUnmark} onOpenChange={(o) => { if (!o) setConfirmUnmark(null) }}>
+        <DialogContent showCloseButton={false} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Markering verwijderen?</DialogTitle>
+            <DialogDescription>
+              Wil je de facturatie-markering voor deze datum verwijderen?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmUnmark(null)}>
+              Annuleren
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmUnmark) applyToggle(confirmUnmark.klantId, confirmUnmark.dateStr, true)
+                setConfirmUnmark(null)
+              }}
+            >
+              Verwijderen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -849,13 +889,7 @@ function LegendPill({ color, bg, label }: { color: string; bg: string; label: st
 }
 
 function StatusBadge({ status }: { status: FactuurStatus }) {
-  const cfg: Record<FactuurStatus, { label: string; color: string }> = {
-    planned: { label: 'Gepland', color: '#6b7280' },
-    sent: { label: 'Verstuurd', color: '#f97316' },
-    paid: { label: 'Betaald', color: '#22c55e' },
-    overdue: { label: 'Verlopen', color: '#ef4444' },
-  }
-  const { label, color } = cfg[status]
+  const { label, color } = FACTUUR_STATUS_CONFIG[status]
   return (
     <span style={{ color }} className="text-xs font-medium">{label}</span>
   )

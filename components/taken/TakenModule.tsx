@@ -4,6 +4,14 @@ import { useState, useMemo, useTransition } from 'react'
 import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { KanbanBoard } from '@/components/projecten/KanbanBoard'
 import { TaakDetailDrawer } from '@/components/projecten/TaakDetailDrawer'
@@ -169,29 +177,33 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
             {/* Filter panel */}
             {filtersOpen && (
               <div className="flex items-center gap-3 pl-8 pr-3 py-2 border-t border-border shrink-0">
-                <select
-                  value={filterProject}
-                  onChange={(e) => setFilterProject(e.target.value)}
-                  className="text-[12px] bg-bg-2 border border-border-subtle rounded px-2.5 py-1 text-fg-2 outline-none"
-                  aria-label="Filter op project"
-                >
-                  <option value="all">Alle projecten</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>{p.naam}</option>
-                  ))}
-                </select>
+                <Select value={filterProject} onValueChange={(v) => setFilterProject(v ?? 'all')}>
+                  <SelectTrigger size="sm" className="text-[12px]" aria-label="Filter op project">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">Alle projecten</SelectItem>
+                      {projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.naam}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
 
-                <select
-                  value={filterPriority}
-                  onChange={(e) => setFilterPriority(e.target.value)}
-                  className="text-[12px] bg-bg-2 border border-border-subtle rounded px-2.5 py-1 text-fg-2 outline-none"
-                  aria-label="Filter op prioriteit"
-                >
-                  <option value="all">Alle prioriteiten</option>
-                  {(Object.keys(PRIORITY_CONFIG) as TaskPriority[]).map((p) => (
-                    <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
-                  ))}
-                </select>
+                <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v ?? 'all')}>
+                  <SelectTrigger size="sm" className="text-[12px]" aria-label="Filter op prioriteit">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">Alle prioriteiten</SelectItem>
+                      {(Object.keys(PRIORITY_CONFIG) as TaskPriority[]).map((p) => (
+                        <SelectItem key={p} value={p}>{PRIORITY_CONFIG[p].label}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
 
                 {activeFilterCount > 0 && (
                   <Button

@@ -4,6 +4,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { SvgIcon } from '@/components/ui/SvgIcon'
+import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
 import type { Project, Milestone, ProjectStatus } from '@/types/project'
 
@@ -221,26 +222,32 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
           className="shrink-0 border-r border-border flex items-center gap-1 px-3"
           style={{ width: LABEL_COL_W }}
         >
-          <button
+          <Button
+            variant="ghost"
+            size="icon-xs"
             onClick={() => setOffsetMonths(o => o - 1)}
-            className="p-1 rounded hover:bg-bg-3 text-fg-3 hover:text-fg-1 transition-colors"
+            className="text-fg-3"
             aria-label="Vorige maanden"
           >
             <SvgIcon name="chevron-left" size={11} />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={() => setOffsetMonths(0)}
-            className="text-[11px] text-fg-3 hover:text-fg-1 transition-colors px-1 rounded hover:bg-bg-3"
+            className="text-[11px] text-fg-3"
           >
             Nu
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
             onClick={() => setOffsetMonths(o => o + 1)}
-            className="p-1 rounded hover:bg-bg-3 text-fg-3 hover:text-fg-1 transition-colors"
+            className="text-fg-3"
             aria-label="Volgende maanden"
           >
             <SvgIcon name="chevron-right" size={11} />
-          </button>
+          </Button>
         </div>
 
         {/* Month labels + track anchor */}

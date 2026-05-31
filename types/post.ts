@@ -3,6 +3,37 @@ import type { TeamMember } from './team'
 export type PostStatus = 'te_doen' | 'bezig' | 'klaar_voor_feedback' | 'akkoord' | 'gepost'
 export type PostType = 'foto' | 'video' | 'reel' | 'carousel'
 
+// ─── Status presentatie (gedeeld over ContentModule, NieuwePostDrawer, preview) ─
+
+export const STATUS_ORDER: PostStatus[] = [
+  'te_doen', 'bezig', 'klaar_voor_feedback', 'akkoord', 'gepost',
+]
+
+export const STATUS_LABEL: Record<PostStatus, string> = {
+  te_doen:             'Te doen',
+  bezig:               'Bezig',
+  klaar_voor_feedback: 'Klaar voor feedback',
+  akkoord:             'Akkoord',
+  gepost:              'Gepost',
+}
+
+export const STATUS_ICON: Record<PostStatus, string> = {
+  te_doen:             'circle-dashed',
+  bezig:               'circle-notch',
+  klaar_voor_feedback: 'circle',
+  akkoord:             'scrubber',
+  gepost:              'circle-check',
+}
+
+// Hex-kleuren voor contexten zonder Tailwind-tokens (publieke preview-pagina)
+export const STATUS_COLOR: Record<PostStatus, string> = {
+  te_doen:             '#6b7280',
+  bezig:               '#f97316',
+  klaar_voor_feedback: '#3b82f6',
+  akkoord:             '#a855f7',
+  gepost:              '#22c55e',
+}
+
 export interface Post {
   id: string
   klant_id: string | null

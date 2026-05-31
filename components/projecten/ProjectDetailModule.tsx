@@ -6,6 +6,14 @@ import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/Select'
 import { KanbanBoard } from './KanbanBoard'
 import { TaakDetailDrawer } from './TaakDetailDrawer'
 import { NieuweTaakDrawer } from './NieuweTaakDrawer'
@@ -21,7 +29,7 @@ import type {
   TaskPriority,
   ProjectStatus,
 } from '@/types/project'
-import { PRIORITY_CONFIG, KANBAN_COLUMNS, PROJECT_COLUMNS } from '@/types/project'
+import { PRIORITY_CONFIG, PRIORITY_ICON, KANBAN_COLUMNS, PROJECT_COLUMNS } from '@/types/project'
 import type { TeamMember } from '@/types/team'
 import { moveTask, updateProject, toggleFavorite } from '@/app/(app)/projecten/actions'
 import {
@@ -46,12 +54,6 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'taken', label: 'Taken', icon: 'list-check-1' },
   { id: 'activiteit', label: 'Activiteit', icon: 'chart-gantt' },
 ]
-
-const PRIORITY_ICON: Record<string, string> = {
-  urgent: 'triangle-exclamation',
-  hoog: 'signal-bars',
-  laag: 'scrubber',
-}
 
 function fmtDate(dateStr: string): string {
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('nl-NL', {
@@ -225,31 +227,33 @@ export function ProjectDetailModule({
       {/* ── Breadcrumb bar ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border shrink-0">
         <div className="flex items-center gap-1.5 min-w-0">
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => router.push('/projecten')}
-            className="p-1 rounded text-fg-3 hover:text-fg-1 hover:bg-bg-4 transition-colors shrink-0"
+            className="text-fg-3 shrink-0"
             aria-label="Terug naar overzicht"
           >
             <ArrowLeft size={15} />
-          </button>
+          </Button>
 
           <SvgIcon name="chart-kanban" size={14} className="text-fg-3 shrink-0" />
           <span className="text-[12px] text-fg-3">Projecten</span>
           <ChevronRight size={10} className="text-fg-disabled shrink-0" />
           <span className="text-[12px] text-fg-1 font-medium truncate">{project.naam}</span>
 
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-xs"
             onClick={handleToggleFavorite}
-            className="p-0.5 rounded shrink-0 transition-colors"
+            className="shrink-0"
             aria-label={isFavorite ? 'Verwijder uit favorieten' : 'Voeg toe aan favorieten'}
           >
             <Star
               size={14}
               className={isFavorite ? 'text-yellow-500 fill-yellow-500' : 'text-fg-3 hover:text-fg-2'}
             />
-          </button>
+          </Button>
         </div>
 
         <Button
@@ -290,21 +294,23 @@ export function ProjectDetailModule({
 
         {/* Right-side tab icons */}
         <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            className="p-1.5 rounded text-fg-3 hover:text-fg-1 hover:bg-bg-3 transition-colors"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-fg-3"
             aria-label="Activiteit"
             onClick={() => setTab('activiteit')}
           >
             <MessageSquare size={14} />
-          </button>
-          <button
-            type="button"
-            className="p-1.5 rounded text-fg-3 hover:text-fg-1 hover:bg-bg-3 transition-colors"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-fg-3"
             aria-label="Weergave wisselen"
           >
             <LayoutGrid size={14} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -461,20 +467,24 @@ export function ProjectDetailModule({
                       onChange={(e) => setDeadlineVal(e.target.value)}
                       className="bg-bg-2 border border-border-subtle rounded px-2 py-0.5 text-[12px] text-fg-1 outline-none focus:border-fg-3"
                     />
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={handleDateSave}
-                      className="p-1 rounded text-green-500 hover:bg-bg-3 transition-colors"
+                      className="text-green-500"
+                      aria-label="Datums opslaan"
                     >
                       <Check size={13} />
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={handleDateCancel}
-                      className="p-1 rounded text-fg-3 hover:bg-bg-3 transition-colors"
+                      className="text-fg-3"
+                      aria-label="Annuleren"
                     >
                       <X size={13} />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <button
@@ -573,17 +583,19 @@ export function ProjectDetailModule({
                 />
               </div>
 
-              <select
-                value={filterPriority}
-                onChange={(e) => setFilterPriority(e.target.value)}
-                className="text-[12px] bg-bg-2 border border-border-subtle rounded px-2.5 py-1 text-fg-2 outline-none"
-                aria-label="Filter op prioriteit"
-              >
-                <option value="all">Alle prioriteiten</option>
-                {(Object.keys(PRIORITY_CONFIG) as TaskPriority[]).map((p) => (
-                  <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
-                ))}
-              </select>
+              <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v ?? 'all')}>
+                <SelectTrigger size="sm" className="text-[12px]" aria-label="Filter op prioriteit">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">Alle prioriteiten</SelectItem>
+                    {(Object.keys(PRIORITY_CONFIG) as TaskPriority[]).map((p) => (
+                      <SelectItem key={p} value={p}>{PRIORITY_CONFIG[p].label}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
 
               <span className="ml-auto text-[12px] text-fg-3">
                 {filteredTasks.length} taken

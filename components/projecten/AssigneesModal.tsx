@@ -4,6 +4,7 @@ import { useState, useMemo, useTransition } from 'react'
 import { X, Search, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
 import { setProjectAssignees } from '@/app/(app)/projecten/actions'
 import type { ProjectAssigneeProfile } from '@/types/project'
 import type { TeamMember } from '@/types/team'
@@ -91,13 +92,15 @@ export function AssigneesModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <span className="text-[14px] font-semibold text-fg-1">Verantwoordelijken</span>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => onOpenChange(false)}
-            className="p-1 rounded text-fg-3 hover:text-fg-1 hover:bg-bg-3 transition-colors"
+            aria-label="Sluiten"
+            className="text-fg-3"
           >
             <X size={15} />
-          </button>
+          </Button>
         </div>
 
         {/* Search */}
@@ -163,21 +166,12 @@ export function AssigneesModal({
             {selected.size} geselecteerd
           </span>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="px-3 py-1.5 text-[12px] text-fg-2 hover:text-fg-1 rounded hover:bg-bg-3 transition-colors"
-            >
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
               Annuleren
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-[12px] font-medium rounded transition-colors"
-            >
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={saving}>
               Opslaan
-            </button>
+            </Button>
           </div>
         </div>
       </div>

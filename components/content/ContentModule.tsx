@@ -9,9 +9,10 @@ import { Avatar } from '@/components/ui/Avatar'
 import { KanbanBoard } from '@/components/ui/KanbanBoard'
 import { cn } from '@/lib/utils'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
-import { NieuwePostDrawer, STATUS_ICON, STATUS_LABEL } from './NieuwePostDrawer'
+import { NieuwePostDrawer } from './NieuwePostDrawer'
 import { updatePostStatus, updatePostDate } from '@/app/(app)/content/actions'
 import type { Post, PostStatus, PostType } from '@/types/post'
+import { STATUS_ICON, STATUS_LABEL, STATUS_ORDER } from '@/types/post'
 import type { Klant } from '@/types/klant'
 import type { TeamMember } from '@/types/team'
 
@@ -28,8 +29,6 @@ const STATUS_CONFIG: Record<PostStatus, {
   akkoord: { label: STATUS_LABEL.akkoord, textClass: 'text-purple-500', iconName: STATUS_ICON.akkoord },
   gepost: { label: STATUS_LABEL.gepost, textClass: 'text-green-500', iconName: STATUS_ICON.gepost },
 }
-
-const STATUS_ORDER: PostStatus[] = ['te_doen', 'bezig', 'klaar_voor_feedback', 'akkoord', 'gepost']
 
 const TYPE_CONFIG: Record<PostType, { label: string; iconName: string }> = {
   foto: { label: 'Foto', iconName: 'image-square' },

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import type { TaskWithRelations } from '@/types/project'
-import { PRIORITY_CONFIG } from '@/types/project'
+import { PRIORITY_CONFIG, PRIORITY_ICON } from '@/types/project'
 
 function fmtDate(dateStr: string): string {
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('nl-NL', {
@@ -15,13 +15,6 @@ function fmtDate(dateStr: string): string {
 
 function isOverdue(dateStr: string): boolean {
   return new Date(dateStr + 'T23:59:59') < new Date()
-}
-
-// Icons for each priority level — matches the Figma design
-const PRIORITY_ICON: Record<string, string> = {
-  urgent: 'triangle-exclamation',
-  hoog:   'signal-bars',
-  laag:   'scrubber',
 }
 
 interface TaakKaartProps {

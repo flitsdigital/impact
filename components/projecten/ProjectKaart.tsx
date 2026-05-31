@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Avatar } from '@/components/ui/Avatar'
-import { PRIORITY_CONFIG } from '@/types/project'
+import { PRIORITY_CONFIG, PRIORITY_ICON } from '@/types/project'
 import type { Project, ProjectAssigneeProfile } from '@/types/project'
 
 function fmtDate(dateStr: string): string {
@@ -15,12 +15,6 @@ function fmtDate(dateStr: string): string {
 
 function isOverdue(dateStr: string): boolean {
   return new Date(dateStr + 'T23:59:59') < new Date()
-}
-
-const PRIORITY_ICON: Record<string, string> = {
-  urgent: 'triangle-exclamation',
-  hoog:   'signal-bars',
-  laag:   'scrubber',
 }
 
 interface ProjectKaartProps {

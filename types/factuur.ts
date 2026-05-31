@@ -3,6 +3,23 @@ import type { Klant } from './klant'
 export type BillingCycle = '4_weeks' | '6_weeks' | 'monthly' | 'custom'
 export type FactuurStatus = 'planned' | 'sent' | 'paid' | 'overdue'
 
+// ─── Status-overgang + presentatie (gedeeld door timeline-actions en tijdlijn) ──
+
+/** Volgende status bij doorklikken (planned → sent → paid → planned). */
+export const FACTUUR_STATUS_NEXT: Record<FactuurStatus, FactuurStatus> = {
+  planned: 'sent',
+  sent:    'paid',
+  paid:    'planned',
+  overdue: 'sent',
+}
+
+export const FACTUUR_STATUS_CONFIG: Record<FactuurStatus, { label: string; color: string }> = {
+  planned: { label: 'Gepland',   color: '#6b7280' },
+  sent:    { label: 'Verstuurd', color: '#f97316' },
+  paid:    { label: 'Betaald',   color: '#22c55e' },
+  overdue: { label: 'Verlopen',  color: '#ef4444' },
+}
+
 /** A single entry in klanten.invoice_records (JSONB) */
 export interface InvoiceRecord {
   date:        string        // 'YYYY-MM-DD'

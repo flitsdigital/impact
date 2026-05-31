@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { InvoiceRecord, FactuurStatus } from '@/types/factuur'
+import { FACTUUR_STATUS_NEXT } from '@/types/factuur'
 
 // ─── Toggle invoiced status for a recurring invoice date ──────────────────────
 
@@ -62,15 +63,9 @@ export async function cycleFactuurStatus(
   factuurId:     string,
   currentStatus: FactuurStatus,
 ): Promise<{ error?: string }> {
-  const nextStatus: Record<FactuurStatus, FactuurStatus> = {
-    planned: 'sent',
-    sent:    'paid',
-    paid:    'planned',
-    overdue: 'sent',
-  }
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
-  const newStatus = nextStatus[currentStatus]
+  const newStatus = FACTUUR_STATUS_NEXT[currentStatus]
 
   const update: Record<string, unknown> = { status: newStatus }
   if (newStatus === 'sent') update.sent_at = new Date().toISOString()
