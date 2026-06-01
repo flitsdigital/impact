@@ -8,6 +8,8 @@ import {
   DrawerTitle,
 } from '@/components/ui/Drawer'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
 import {
   Select,
   SelectContent,
@@ -19,8 +21,7 @@ import {
 import type { Project, Task, TaskStatus, TaskPriority } from '@/types/project'
 import { PRIORITY_CONFIG, KANBAN_COLUMNS } from '@/types/project'
 import { createTask } from '@/app/(app)/projecten/actions'
-import { X } from 'lucide-react'
-
+import { SvgIcon } from '@/components/ui/SvgIcon'
 interface NieuweTaakDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -84,7 +85,7 @@ export function NieuweTaakDrawer({
           <DrawerTitle className="text-[15px] font-medium text-fg-1">Nieuwe taak</DrawerTitle>
           <DrawerClose asChild data-vaul-no-drag>
             <Button variant="ghost" size="icon-sm" aria-label="Sluiten">
-              <X size={16} />
+              <SvgIcon name="x" size={16} />
             </Button>
           </DrawerClose>
         </div>
@@ -95,14 +96,14 @@ export function NieuweTaakDrawer({
           {/* Titel */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="taak-titel" className="text-[12px] text-fg-2">Titel <span className="text-orange-500">*</span></label>
-            <input
+            <Input
               id="taak-titel"
               type="text"
               value={titel}
               onChange={(e) => setTitel(e.target.value)}
               placeholder="Wat moet er gedaan worden?"
               autoFocus
-              className="bg-bg-2 border border-border-subtle rounded-lg px-3 py-2 text-[14px] text-fg-1 placeholder:text-fg-3 outline-none focus:border-border-strong transition-colors"
+              className="h-auto rounded-lg bg-bg-2 px-3 py-2 text-[14px] placeholder:text-fg-3"
               data-vaul-no-drag
             />
           </div>
@@ -162,12 +163,12 @@ export function NieuweTaakDrawer({
           {/* Deadline */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="taak-deadline" className="text-[12px] text-fg-2">Deadline</label>
-            <input
+            <Input
               id="taak-deadline"
               type="date"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
-              className="bg-bg-2 border border-border-subtle rounded-lg px-3 py-2 text-[13px] text-fg-1 outline-none focus:border-border-strong transition-colors"
+              className="h-auto rounded-lg bg-bg-2 px-3 py-2 text-[13px]"
               data-vaul-no-drag
             />
           </div>
@@ -175,13 +176,13 @@ export function NieuweTaakDrawer({
           {/* Beschrijving */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="taak-beschrijving" className="text-[12px] text-fg-2">Beschrijving</label>
-            <textarea
+            <Textarea
               id="taak-beschrijving"
               value={beschrijving}
               onChange={(e) => setBeschrijving(e.target.value)}
               rows={3}
               placeholder="Optionele beschrijving..."
-              className="bg-bg-2 border border-border-subtle rounded-lg px-3 py-2 text-[13px] text-fg-1 placeholder:text-fg-3 outline-none resize-none focus:border-border-strong transition-colors"
+              className="min-h-0 bg-bg-2 text-[13px] placeholder:text-fg-3"
               data-vaul-no-drag
             />
           </div>

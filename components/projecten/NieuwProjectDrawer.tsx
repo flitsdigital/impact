@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { createProject } from '@/app/(app)/projecten/actions'
-import { X, ChevronRight, Calendar, User } from 'lucide-react'
+import { SvgIcon } from '@/components/ui/SvgIcon'
 import type { ProjectStatus } from '@/types/project'
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string; dot: string }[] = [
@@ -81,7 +82,7 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
               P
             </div>
             <span>Projecten</span>
-            <ChevronRight size={10} className="text-fg-disabled" />
+            <SvgIcon name="chevron-right" size={10} className="text-fg-disabled" />
             <span className="text-fg-2">Nieuw project</span>
           </div>
           <Button
@@ -91,7 +92,7 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
             aria-label="Sluiten"
             className="text-fg-3"
           >
-            <X size={15} />
+            <SvgIcon name="x" size={15} />
           </Button>
         </div>
 
@@ -181,7 +182,7 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
                       : 'bg-bg-0 border-border-subtle text-fg-2 hover:border-border hover:text-fg-1',
                   )}
                 >
-                  <User size={11} />
+                  <SvgIcon name="user" size={11} />
                   {selectedKlant?.naam ?? 'Klant'}
                 </button>
                 {openChip === 'klant' && (
@@ -228,20 +229,20 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
                     : 'bg-bg-0 border-border-subtle text-fg-2 hover:border-border hover:text-fg-1',
                 )}
               >
-                <Calendar size={11} />
+                <SvgIcon name="calendar" size={11} />
                 {deadline
                   ? new Date(deadline + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
                   : 'Deadline'}
               </button>
               {openChip === 'deadline' && (
                 <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg p-3">
-                  <input
+                  <Input
                     type="date"
                     value={deadline}
                     onChange={(e) => { setDeadline(e.target.value); setOpenChip(null) }}
                     aria-label="Projectdeadline"
                     autoFocus
-                    className="bg-bg-3 border border-border-subtle rounded px-2 py-1.5 text-[12px] text-fg-1 outline-none"
+                    className="h-auto rounded bg-bg-3 px-2 py-1.5 text-[12px]"
                   />
                   {deadline && (
                     <button
@@ -277,7 +278,7 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
                 <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg p-3">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[12px] text-fg-3">€</span>
-                    <input
+                    <Input
                       type="number"
                       value={budget}
                       onChange={(e) => setBudget(e.target.value)}
@@ -286,7 +287,7 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
                       min="0"
                       aria-label="Projectbudget in euro"
                       autoFocus
-                      className="bg-bg-3 border border-border-subtle rounded px-2 py-1.5 text-[12px] text-fg-1 outline-none w-[100px]"
+                      className="h-auto w-[100px] rounded bg-bg-3 px-2 py-1.5 text-[12px]"
                     />
                   </div>
                 </div>

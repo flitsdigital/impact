@@ -4,7 +4,7 @@ import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 
 import { cn } from "@/lib/utils"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+import { SvgIcon } from "@/components/ui/SvgIcon"
 
 const Select = SelectPrimitive.Root
 
@@ -49,7 +49,7 @@ function SelectTrigger({
       {children}
       <SelectPrimitive.Icon
         render={
-          <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+          <SvgIcon name="chevron-down" className="pointer-events-none text-muted-foreground" />
         }
       />
     </SelectPrimitive.Trigger>
@@ -78,7 +78,11 @@ function SelectContent({
         align={align}
         alignOffset={alignOffset}
         alignItemWithTrigger={alignItemWithTrigger}
-        className="isolate z-50"
+        // pointer-events-auto: the popup is portaled to <body>, and vaul/Radix
+        // dialogs (our Drawer) set `body { pointer-events: none }` while open.
+        // Without this, the portaled popup inherits `none` and its options are
+        // unclickable inside a Drawer/Dialog. Re-enabling here keeps it usable.
+        className="isolate z-50 pointer-events-auto"
       >
         <SelectPrimitive.Popup
           data-slot="select-content"
@@ -130,7 +134,7 @@ function SelectItem({
           <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
         }
       >
-        <CheckIcon className="pointer-events-none" />
+        <SvgIcon name="check" className="pointer-events-none" />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   )
@@ -162,8 +166,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon
-      />
+      <SvgIcon name="chevron-up" />
     </SelectPrimitive.ScrollUpArrow>
   )
 }
@@ -181,8 +184,7 @@ function SelectScrollDownButton({
       )}
       {...props}
     >
-      <ChevronDownIcon
-      />
+      <SvgIcon name="chevron-down" />
     </SelectPrimitive.ScrollDownArrow>
   )
 }

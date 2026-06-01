@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import {
   Select,
   SelectContent,
@@ -32,17 +33,6 @@ import type {
 import { PRIORITY_CONFIG, PRIORITY_ICON, KANBAN_COLUMNS, PROJECT_COLUMNS } from '@/types/project'
 import type { TeamMember } from '@/types/team'
 import { moveTask, updateProject, toggleFavorite } from '@/app/(app)/projecten/actions'
-import {
-  ArrowLeft,
-  Plus,
-  Star,
-  ChevronRight,
-  MessageSquare,
-  LayoutGrid,
-  Pencil,
-  Check,
-  X,
-} from 'lucide-react'
 import { DocumentIcon } from '@/components/projecten/DocumentIcon'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -234,12 +224,12 @@ export function ProjectDetailModule({
             className="text-fg-3 shrink-0"
             aria-label="Terug naar overzicht"
           >
-            <ArrowLeft size={15} />
+            <SvgIcon name="arrow-left" size={15} />
           </Button>
 
           <SvgIcon name="chart-kanban" size={14} className="text-fg-3 shrink-0" />
           <span className="text-[12px] text-fg-3">Projecten</span>
-          <ChevronRight size={10} className="text-fg-disabled shrink-0" />
+          <SvgIcon name="chevron-right" size={10} className="text-fg-disabled shrink-0" />
           <span className="text-[12px] text-fg-1 font-medium truncate">{project.naam}</span>
 
           <Button
@@ -249,7 +239,7 @@ export function ProjectDetailModule({
             className="shrink-0"
             aria-label={isFavorite ? 'Verwijder uit favorieten' : 'Voeg toe aan favorieten'}
           >
-            <Star
+            <SvgIcon name="star"
               size={14}
               className={isFavorite ? 'text-yellow-500 fill-yellow-500' : 'text-fg-3 hover:text-fg-2'}
             />
@@ -261,7 +251,7 @@ export function ProjectDetailModule({
           onClick={() => { setTaakKey((k) => k + 1); setNieuweTaakOpen(true) }}
           className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shrink-0"
         >
-          <Plus size={13} />
+          <SvgIcon name="plus" size={13} />
           Nieuwe taak
         </Button>
       </div>
@@ -301,7 +291,7 @@ export function ProjectDetailModule({
             aria-label="Activiteit"
             onClick={() => setTab('activiteit')}
           >
-            <MessageSquare size={14} />
+            <SvgIcon name="message-square" size={14} />
           </Button>
           <Button
             variant="ghost"
@@ -309,7 +299,7 @@ export function ProjectDetailModule({
             className="text-fg-3"
             aria-label="Weergave wisselen"
           >
-            <LayoutGrid size={14} />
+            <SvgIcon name="layout-grid" size={14} />
           </Button>
         </div>
       </div>
@@ -454,18 +444,18 @@ export function ProjectDetailModule({
                 {/* Date range — click to edit */}
                 {editingDate ? (
                   <div className="flex items-center gap-2">
-                    <input
+                    <Input
                       type="date"
                       value={startDateVal}
                       onChange={(e) => setStartDateVal(e.target.value)}
-                      className="bg-bg-2 border border-border-subtle rounded px-2 py-0.5 text-[12px] text-fg-1 outline-none focus:border-fg-3"
+                      className="h-auto rounded bg-bg-2 px-2 py-0.5 text-[12px]"
                     />
                     <span className="text-[10px] text-fg-3">→</span>
-                    <input
+                    <Input
                       type="date"
                       value={deadlineVal}
                       onChange={(e) => setDeadlineVal(e.target.value)}
-                      className="bg-bg-2 border border-border-subtle rounded px-2 py-0.5 text-[12px] text-fg-1 outline-none focus:border-fg-3"
+                      className="h-auto rounded bg-bg-2 px-2 py-0.5 text-[12px]"
                     />
                     <Button
                       variant="ghost"
@@ -474,7 +464,7 @@ export function ProjectDetailModule({
                       className="text-green-500"
                       aria-label="Datums opslaan"
                     >
-                      <Check size={13} />
+                      <SvgIcon name="check" size={13} />
                     </Button>
                     <Button
                       variant="ghost"
@@ -483,7 +473,7 @@ export function ProjectDetailModule({
                       className="text-fg-3"
                       aria-label="Annuleren"
                     >
-                      <X size={13} />
+                      <SvgIcon name="x" size={13} />
                     </Button>
                   </div>
                 ) : (
@@ -548,7 +538,7 @@ export function ProjectDetailModule({
                   onClick={() => setBijlageOpen(true)}
                   className="flex items-center gap-1 text-[12px] text-fg-3 hover:text-fg-1 transition-colors"
                 >
-                  <Plus size={12} />
+                  <SvgIcon name="plus" size={12} />
                   Bijlage
                 </button>
               </div>

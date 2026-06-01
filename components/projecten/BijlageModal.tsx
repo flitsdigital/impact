@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useRef, useTransition } from 'react'
-import { X, Link2, Upload, Trash2, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import { DocumentIcon } from '@/components/projecten/DocumentIcon'
 import type { ProjectDocument } from '@/types/project'
 import { addProjectDocument, deleteProjectDocument, uploadProjectFile } from '@/app/(app)/projecten/actions'
@@ -142,7 +142,7 @@ export function BijlageModal({
             aria-label="Sluiten"
             className="text-fg-3"
           >
-            <X size={15} />
+            <SvgIcon name="x" size={15} />
           </Button>
         </div>
 
@@ -158,7 +158,7 @@ export function BijlageModal({
                 : 'border-transparent text-fg-3 hover:text-fg-2',
             )}
           >
-            <Link2 size={13} />
+            <SvgIcon name="link" size={13} />
             Link toevoegen
           </button>
           <button
@@ -171,7 +171,7 @@ export function BijlageModal({
                 : 'border-transparent text-fg-3 hover:text-fg-2',
             )}
           >
-            <Upload size={13} />
+            <SvgIcon name="upload" size={13} />
             Bestand uploaden
           </button>
         </div>
@@ -182,22 +182,22 @@ export function BijlageModal({
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">Naam</label>
-                <input
+                <Input
                   type="text"
                   value={naam}
                   onChange={(e) => setNaam(e.target.value)}
                   placeholder="bijv. Offerte, Design brief..."
-                  className="w-full bg-bg-2 border border-border-subtle rounded px-3 py-2 text-[13px] text-fg-1 placeholder:text-fg-disabled outline-none focus:border-fg-3 transition-colors"
+                  className="h-auto w-full rounded bg-bg-2 px-3 py-2 text-[13px] placeholder:text-fg-disabled"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">URL</label>
-                <input
+                <Input
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="https://docs.google.com/..."
-                  className="w-full bg-bg-2 border border-border-subtle rounded px-3 py-2 text-[13px] text-fg-1 placeholder:text-fg-disabled outline-none focus:border-fg-3 transition-colors"
+                  className="h-auto w-full rounded bg-bg-2 px-3 py-2 text-[13px] placeholder:text-fg-disabled"
                 />
               </div>
               {error && <p className="text-[11px] text-red-400">{error}</p>}
@@ -216,12 +216,12 @@ export function BijlageModal({
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">Naam (optioneel)</label>
-                <input
+                <Input
                   type="text"
                   value={naam}
                   onChange={(e) => setNaam(e.target.value)}
                   placeholder="Laat leeg voor bestandsnaam"
-                  className="w-full bg-bg-2 border border-border-subtle rounded px-3 py-2 text-[13px] text-fg-1 placeholder:text-fg-disabled outline-none focus:border-fg-3 transition-colors"
+                  className="h-auto w-full rounded bg-bg-2 px-3 py-2 text-[13px] placeholder:text-fg-disabled"
                 />
               </div>
               <label
@@ -230,7 +230,7 @@ export function BijlageModal({
                   uploading ? 'opacity-50 cursor-not-allowed' : 'hover:border-fg-3 hover:bg-bg-2',
                 )}
               >
-                <Upload size={20} className="text-fg-3" />
+                <SvgIcon name="upload" size={20} className="text-fg-3" />
                 <span className="text-[12px] text-fg-2 text-center">
                   {uploading ? 'Uploaden...' : 'Klik of sleep een PDF hierheen'}
                 </span>
@@ -268,7 +268,7 @@ export function BijlageModal({
                     className="flex-1 text-[12px] text-fg-2 hover:text-fg-1 truncate flex items-center gap-1"
                   >
                     {doc.naam}
-                    <ExternalLink size={10} className="shrink-0 opacity-50" />
+                    <SvgIcon name="external-link" size={10} className="shrink-0 opacity-50" />
                   </a>
                   <Button
                     variant="ghost"
@@ -277,7 +277,7 @@ export function BijlageModal({
                     aria-label="Bijlage verwijderen"
                     className="text-fg-disabled hover:text-red-400 opacity-0 group-hover:opacity-100"
                   >
-                    <Trash2 size={12} />
+                    <SvgIcon name="trash" size={12} />
                   </Button>
                 </div>
               ))}

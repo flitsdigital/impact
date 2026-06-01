@@ -1,13 +1,17 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
+import { DrawerClose } from '@/components/ui/Drawer'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerClose,
-  DrawerTitle,
-} from '@/components/ui/Drawer'
+  AppDrawer,
+  AppDrawerHeader,
+  AppDrawerMeta,
+  AppDrawerBody,
+  AppDrawerFooter,
+} from '@/components/ui/AppDrawer'
+import { PillSelect } from '@/components/ui/PillSelect'
 import { Button }   from '@/components/ui/Button'
+import { Input }    from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Avatar }   from '@/components/ui/Avatar'
 import { SvgIcon }  from '@/components/ui/SvgIcon'
@@ -55,36 +59,6 @@ async function compressImage(file: File, maxBytes = 3_000_000): Promise<File> {
     }
     img.src = URL.createObjectURL(file)
   })
-}
-
-// ─── Native pill select ───────────────────────────────────────────────────────
-
-function PillSelect({ name, value, onChange, children, icon, className }: {
-  name: string; value: string; onChange: (v: string) => void
-  children: React.ReactNode; icon?: string; className?: string
-}) {
-  return (
-    <div className="relative inline-flex items-center">
-      {icon && (
-        <span className="pointer-events-none absolute left-2 flex items-center text-muted-foreground">
-          <SvgIcon name={icon} size={12} />
-        </span>
-      )}
-      <select
-        name={name} value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          'h-7 appearance-none rounded-full border border-border bg-secondary text-xs text-foreground outline-none cursor-pointer focus:border-ring pr-5',
-          icon ? 'pl-6' : 'pl-3', className
-        )}
-      >
-        {children}
-      </select>
-      <span className="pointer-events-none absolute right-2 text-muted-foreground">
-        <SvgIcon name="caret-down" size={10} />
-      </span>
-    </div>
-  )
 }
 
 // ─── Assignee picker ──────────────────────────────────────────────────────────
@@ -307,30 +281,15 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
   const currentTypeIcon = TYPE_OPTIONS.find(t => t.value === type)?.iconName ?? 'image-square'
 
   return (
-    <Drawer direction="right" open={open} onOpenChange={onOpenChange}>
-      <DrawerContent
-        style={{
-          top: '1rem', bottom: '1rem', right: '1rem',
-          height: 'calc(100dvh - 2rem)',
-          maxWidth: '620px', width: '100%',
-          background: '#0F0F10', border: '1px solid #1D1E1F',
-          borderRadius: '12px', overflow: 'hidden',
-        }}
-        className="rounded-xl"
+    <AppDrawer open={open} onOpenChange={onOpenChange} title={isEdit ? 'Post bewerken' : 'Nieuwe post maken'}>
+      <form
+        ref={formRef}
+        onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
+        data-vaul-no-drag
+        className="flex h-full flex-col"
       >
-        <DrawerTitle className="sr-only">
-          {isEdit ? 'Post bewerken' : 'Nieuwe post maken'}
-        </DrawerTitle>
-
-        <form
-          ref={formRef}
-          onSubmit={handleSubmit}
-          onKeyDown={handleKeyDown}
-          data-vaul-no-drag
-          className="flex flex-col h-full"
-        >
-          {/* ── Header ─────────────────────────────────────────────── */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+        <AppDrawerHeader>
             <div className="flex items-center gap-2 text-muted-foreground">
               <SvgIcon name={isEdit ? 'file-text' : 'file-text'} size={14} />
               <span className="text-sm font-medium text-foreground">
@@ -361,10 +320,9 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
                 </Button>
               </DrawerClose>
             </div>
-          </div>
+        </AppDrawerHeader>
 
-          {/* ── Metadata pills ─────────────────────────────────────── */}
-          <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-border shrink-0">
+        <AppDrawerMeta>
             {/* Status */}
             <PillSelect name="status" value={status} onChange={(v) => setStatus(v as PostStatus)} icon={STATUS_ICON[status]}>
               {STATUS_ORDER.map((s) => (
@@ -392,19 +350,18 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
               <span className="pointer-events-none absolute left-2 flex items-center text-muted-foreground">
                 <SvgIcon name="calendar" size={12} />
               </span>
-              <input
+              <Input
                 type="date" value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="h-7 appearance-none rounded-full border border-border bg-secondary pl-6 pr-3 text-xs text-foreground outline-none cursor-pointer focus:border-ring"
+                className="h-7 cursor-pointer appearance-none rounded-full bg-secondary pl-6 pr-3 text-xs"
               />
             </div>
 
             {/* Teamleden */}
             <AssigneePicker teamleden={teamleden} value={assigneeIds} onChange={setAssigneeIds} />
-          </div>
+        </AppDrawerMeta>
 
-          {/* ── Scrollable body ────────────────────────────────────── */}
-          <div className="flex-1 overflow-auto p-4 flex flex-col gap-3 min-h-0">
+        <AppDrawerBody>
             {/* Media upload / preview */}
             {preview ? (
               <div className="relative rounded-md overflow-hidden border border-border shrink-0">
@@ -444,10 +401,9 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
             />
 
             {error && <p className="text-xs text-destructive shrink-0">{error}</p>}
-          </div>
+        </AppDrawerBody>
 
-          {/* ── Footer ─────────────────────────────────────────────── */}
-          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-border shrink-0">
+        <AppDrawerFooter>
             <DrawerClose asChild>
               <Button variant="outline" size="sm" type="button">Annuleren</Button>
             </DrawerClose>
@@ -459,9 +415,8 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
                 <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">↵</kbd>
               </span>
             </Button>
-          </div>
-        </form>
-      </DrawerContent>
-    </Drawer>
+        </AppDrawerFooter>
+      </form>
+    </AppDrawer>
   )
 }

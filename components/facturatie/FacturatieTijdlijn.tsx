@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { toast } from 'sonner'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
 import {
   Dialog,
   DialogContent,
@@ -17,8 +18,6 @@ import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { toggleInvoiceRecord, cycleFactuurStatus } from '@/app/(app)/timeline/actions'
 import type { KlantBilling, ComputedInvoice, FactuurStatus } from '@/types/factuur'
 import { FACTUUR_STATUS_NEXT, FACTUUR_STATUS_CONFIG } from '@/types/factuur'
-import { UserRoundPlus } from 'lucide-react'
-
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
 const LEFT_W = 240   // px – sticky client label column
@@ -458,12 +457,12 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
               <span className="absolute left-2 text-muted-foreground pointer-events-none">
                 <SvgIcon name="magnifying-glass" size={13} />
               </span>
-              <input
+              <Input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Zoek een klant"
-                className="h-[26px] bg-bg-0 border border-border rounded-full pl-7 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-ring w-[200px]"
+                className="h-[26px] w-[200px] rounded-full bg-bg-0 pl-7 pr-3 text-xs"
               />
             </div>
             <Button size="sm">
