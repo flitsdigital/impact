@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Search, ChevronDown, LogOut, User, Zap } from "lucide-react"
+import { SvgIcon } from "@/components/ui/SvgIcon"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -33,7 +33,7 @@ export function TopBar() {
       {/* Left — brand mark */}
       <div className="flex items-center gap-[7px]">
         <span className="fl-bolt">
-          <Zap size={12} fill="var(--brand-yellow)" color="var(--brand-yellow)" />
+          <SvgIcon name="bolt" size={12} className="text-[var(--brand-yellow)]" />
         </span>
         <span className="text-[13px] font-medium text-fg-1">Flits Impact CRM</span>
       </div>
@@ -45,7 +45,7 @@ export function TopBar() {
         onClick={() => setSearchOpen(true)}
         aria-label="Zoeken"
       >
-        <Search size={13} className="text-fg-2 shrink-0" />
+        <SvgIcon name="magnifying-glass" size={13} className="text-fg-2 shrink-0" />
         <span className="text-[12px] text-fg-2">Zoeken</span>
         <span className="ml-auto flex items-center gap-1">
           <span className="fl-kbd text-[11px]">⌘</span>
@@ -59,7 +59,7 @@ export function TopBar() {
           <DropdownMenuTrigger asChild>
             <button type="button" className="flex items-center gap-1.5 rounded-md px-1.5 py-1 border-none bg-transparent cursor-pointer text-fg-2 transition-colors hover:bg-bg-3">
               <Avatar src={avatarUrl} name={displayName} size={22} />
-              <ChevronDown size={10} className="text-fg-2" />
+              <SvgIcon name="chevron-down" size={10} className="text-fg-2" />
             </button>
           </DropdownMenuTrigger>
 
@@ -70,14 +70,14 @@ export function TopBar() {
             </div>
 
             <DropdownMenuItem>
-              <User size={14} />
+              <SvgIcon name="user" size={14} />
               Profiel
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
 
             <DropdownMenuItem onSelect={handleSignOut} className="text-orange-500 focus:text-orange-500">
-              <LogOut size={14} />
+              <SvgIcon name="log-out" size={14} />
               Uitloggen
             </DropdownMenuItem>
           </DropdownMenuContent>

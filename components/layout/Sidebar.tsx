@@ -2,61 +2,44 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  LayoutGrid,
-  Inbox,
-  Users,
-  FileText,
-  UserPlus,
-  KanbanSquare,
-  CheckSquare,
-  Map,
-  Clock,
-  ListChecks,
-  Settings,
-  ChevronDown,
-  Smile,
-} from "lucide-react"
 import { SvgIcon } from "@/components/ui/SvgIcon"
 
 const NAV = {
   primary: [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
-    { href: "/inbox", label: "Inbox", icon: Inbox, count: 7, kbds: ["⌘", "⌥", "G"] },
+    { href: "/dashboard", label: "Dashboard", svgName: "layout-grid" },
+    { href: "/inbox", label: "Inbox", svgName: "inbox", count: 7, kbds: ["⌘", "⌥", "G"] },
   ],
   klanten: [
-    { href: "/klanten",  label: "Klanten",             icon: Users },
-    { href: "/timeline", label: "Facturatie tijdlijn", icon: null, svgName: 'chart-gantt' },
-    { href: "/content", label: "Content", icon: FileText },
-    { href: "/leads", label: "Leads", icon: UserPlus },
+    { href: "/klanten",  label: "Klanten",             svgName: "users" },
+    { href: "/timeline", label: "Facturatie tijdlijn", svgName: "chart-gantt" },
+    { href: "/content", label: "Content", svgName: "file-text" },
+    { href: "/leads", label: "Leads", svgName: "user-plus" },
   ],
   projecten: [
-    { href: "/projecten", label: "Projecten", icon: KanbanSquare },
-    { href: "/taken", label: "Taken", icon: CheckSquare },
+    { href: "/projecten", label: "Projecten", svgName: "chart-kanban" },
+    { href: "/taken", label: "Taken", svgName: "check-square" },
   ],
   financieel: [
-    { href: "/reiskosten", label: "Reiskosten", icon: Map },
-    { href: "/uren", label: "Urenregistratie", icon: Clock },
+    { href: "/reiskosten", label: "Reiskosten", svgName: "map" },
+    { href: "/uren", label: "Urenregistratie", svgName: "clock" },
   ],
   footer: [
-    { href: "/todos", label: "Taken", icon: ListChecks, count: 7, kbds: ["⌘", "T"] },
-    { href: "/gebruikers", label: "Gebruikers", icon: Smile },
-    { href: "/instellingen", label: "Instellingen", icon: Settings },
+    { href: "/todos", label: "Taken", svgName: "list-check", count: 7, kbds: ["⌘", "T"] },
+    { href: "/gebruikers", label: "Gebruikers", svgName: "smile" },
+    { href: "/instellingen", label: "Instellingen", svgName: "settings" },
   ],
 }
 
 function NavRow({
   href,
   label,
-  icon: Icon,
   svgName,
   count,
   kbds,
 }: {
   href: string
   label: string
-  icon: React.ElementType | null
-  svgName?: string
+  svgName: string
   count?: number
   kbds?: string[]
 }) {
@@ -70,10 +53,7 @@ function NavRow({
       data-active={active ? "true" : "false"}
     >
       <span className="flex items-center gap-[10px]">
-        {svgName
-          ? <SvgIcon name={svgName} size={16} className="shrink-0 text-inherit" />
-          : Icon ? <Icon size={16} className="shrink-0 text-inherit" /> : null
-        }
+        <SvgIcon name={svgName} size={16} className="shrink-0 text-inherit" />
         <span className="text-[13px] font-medium">{label}</span>
         {kbds && (
           <span className="flex gap-1 ml-1.5">
@@ -88,12 +68,12 @@ function NavRow({
   )
 }
 
-function NavGroup({ label, items }: { label: string; items: { href: string; label: string; icon: React.ElementType | null; svgName?: string; count?: number; kbds?: string[] }[] }) {
+function NavGroup({ label, items }: { label: string; items: { href: string; label: string; svgName: string; count?: number; kbds?: string[] }[] }) {
   return (
     <div className="flex flex-col gap-0.5">
       <div className="flex items-center gap-1 px-2 py-1">
         <span className="t-section-label">{label}</span>
-        <ChevronDown size={12} className="text-fg-2" />
+        <SvgIcon name="chevron-down" size={12} className="text-fg-2" />
       </div>
       {items.map((item) => (
         <NavRow key={item.href} {...item} />

@@ -2,13 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import {
-  Search, UserRoundPlus,
-  Table2, List, Columns3,
-  RefreshCw, FolderOpen, Zap,
-  BadgeCheck, CirclePause, Archive,
-  ArrowUpDown,
-} from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
@@ -30,14 +23,14 @@ import { SvgIcon } from '../ui/SvgIcon'
 
 function TypeBadge({ type }: { type: KlantType }) {
   const map = {
-    recurring: { icon: RefreshCw, label: 'Recurring' },
-    project: { icon: FolderOpen, label: 'Project' },
-    'one-off': { icon: Zap, label: 'One-off' },
+    recurring: { icon: 'refresh', label: 'Recurring' },
+    project: { icon: 'folder-open', label: 'Project' },
+    'one-off': { icon: 'bolt', label: 'One-off' },
   }
-  const { icon: Icon, label } = map[type]
+  const { icon, label } = map[type]
   return (
     <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
-      <Icon size={13} className="shrink-0" />
+      <SvgIcon name={icon} size={13} className="shrink-0" />
       {label}
     </span>
   )
@@ -47,7 +40,7 @@ function StatusBadge({ status }: { status: KlantStatus }) {
   if (status === 'actief') {
     return (
       <Badge className="bg-[#0f2e18] text-foreground border-transparent gap-1.5 pl-1.5 pr-2 rounded-full hover:bg-[#0f2e18]">
-        <BadgeCheck size={14} className="text-green-500" />
+        <SvgIcon name="badge-check" size={14} className="text-green-500" />
         Actief
       </Badge>
     )
@@ -55,14 +48,14 @@ function StatusBadge({ status }: { status: KlantStatus }) {
   if (status === 'gepauzeerd') {
     return (
       <Badge variant="secondary" className="gap-1.5 pl-1.5 pr-2 rounded-full">
-        <CirclePause size={14} />
+        <SvgIcon name="circle-pause" size={14} />
         Gepauzeerd
       </Badge>
     )
   }
   return (
     <Badge variant="outline" className="gap-1.5 pl-1.5 pr-2 rounded-full">
-      <Archive size={14} />
+      <SvgIcon name="archive" size={14} />
       Gearchiveerd
     </Badge>
   )
@@ -142,7 +135,7 @@ export function KlantenTable({ klanten }: { klanten: Klant[] }) {
         actions={
           <>
             <div className="relative flex items-center">
-              <Search size={13} className="absolute left-2.5 text-muted-foreground pointer-events-none" />
+              <SvgIcon name="magnifying-glass" size={13} className="absolute left-2.5 text-muted-foreground pointer-events-none" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -160,10 +153,10 @@ export function KlantenTable({ klanten }: { klanten: Klant[] }) {
           <PageToolbar className="gap-1.5 py-2.5">
             <div className="flex items-center p-0.5 rounded-full bg-bg-0">
               {([
-                { key: 'tabel', icon: Table2, label: 'Tabel' },
-                { key: 'lijst', icon: List, label: 'Lijst' },
-                { key: 'kanban', icon: Columns3, label: 'Kanban' },
-              ] as { key: View; icon: React.ElementType; label: string }[]).map(({ key, icon: Icon, label }) => (
+                { key: 'tabel', icon: 'table', label: 'Tabel' },
+                { key: 'lijst', icon: 'list', label: 'Lijst' },
+                { key: 'kanban', icon: 'layout-columns', label: 'Kanban' },
+              ] as { key: View; icon: string; label: string }[]).map(({ key, icon, label }) => (
                 <Button
                   key={key}
                   variant="ghost"
@@ -171,7 +164,7 @@ export function KlantenTable({ klanten }: { klanten: Klant[] }) {
                   onClick={() => setView(key)}
                   className={cn('rounded-full', view === key && 'bg-secondary text-foreground')}
                 >
-                  <Icon data-icon="inline-start" />
+                  <SvgIcon name={icon} data-icon="inline-start" />
                   {label}
                 </Button>
               ))}
@@ -224,7 +217,7 @@ export function KlantenTable({ klanten }: { klanten: Klant[] }) {
                   className="px-0 text-muted-foreground hover:text-foreground font-medium"
                 >
                   Klantnaam
-                  <ArrowUpDown data-icon="inline-end" />
+                  <SvgIcon name="arrows-sort" data-icon="inline-end" />
                 </Button>
               </TableHead>
               {/* Scrollable */}
@@ -236,7 +229,7 @@ export function KlantenTable({ klanten }: { klanten: Klant[] }) {
                   className="px-0 text-muted-foreground hover:text-foreground font-medium"
                 >
                   Type
-                  <ArrowUpDown data-icon="inline-end" />
+                  <SvgIcon name="arrows-sort" data-icon="inline-end" />
                 </Button>
               </TableHead>
               <TableHead className="w-[160px] border-b border-border font-medium text-muted-foreground">

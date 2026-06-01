@@ -13,7 +13,6 @@ import { NieuwProjectDrawer } from './NieuwProjectDrawer'
 import type { Project, Milestone, ProjectAssigneeProfile } from '@/types/project'
 import { PROJECT_COLUMNS } from '@/types/project'
 import { moveProject, updateProject } from '@/app/(app)/projecten/actions'
-import { FilePlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type View = 'kanban' | 'gantt'
@@ -106,7 +105,7 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
               onClick={() => { setProjectKey(k => k + 1); setNieuwProjectOpen(true) }}
               className="gap-1.5"
             >
-              <FilePlus size={13} />
+              <SvgIcon name="file-plus" size={13} />
               Nieuw project
             </Button>
           </>
@@ -143,7 +142,7 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
               onClick={() => { setProjectKey(k => k + 1); setNieuwProjectOpen(true) }}
               className="gap-1.5 mt-2"
             >
-              <FilePlus size={13} />
+              <SvgIcon name="file-plus" size={13} />
               Nieuw project
             </Button>
           </div>

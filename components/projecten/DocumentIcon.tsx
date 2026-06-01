@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Link2, FileText } from 'lucide-react'
+import { SvgIcon } from '@/components/ui/SvgIcon'
 import { cn } from '@/lib/utils'
 import type { ProjectDocument } from '@/types/project'
 
@@ -55,12 +55,12 @@ export function DocumentIcon({ type, url, size = 13, className }: DocumentIconPr
   const [failed, setFailed] = useState(false)
 
   if (type === 'file') {
-    return <FileText size={size} className={cn('text-fg-3 shrink-0', className)} />
+    return <SvgIcon name="file-text" size={size} className={cn('text-fg-3 shrink-0', className)} />
   }
 
   const iconUrl = failed ? null : iconUrlFor(url)
   if (!iconUrl) {
-    return <Link2 size={size} className={cn('text-fg-3 shrink-0', className)} />
+    return <SvgIcon name="link" size={size} className={cn('text-fg-3 shrink-0', className)} />
   }
 
   return (

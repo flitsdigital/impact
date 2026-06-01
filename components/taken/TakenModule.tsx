@@ -20,8 +20,6 @@ import type { Project, Task, TaskWithRelations, TaskStatus, TaskPriority } from 
 import { PRIORITY_CONFIG, KANBAN_COLUMNS } from '@/types/project'
 import type { TeamMember } from '@/types/team'
 import { moveTask } from '@/app/(app)/projecten/actions'
-import { Plus } from 'lucide-react'
-
 type View = 'kanban' | 'lijst'
 
 interface TakenModuleProps {
@@ -129,7 +127,7 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
               onClick={() => { setTaakKey((k) => k + 1); setNieuweTaakOpen(true) }}
               className="gap-1.5"
             >
-              <Plus size={13} />
+              <SvgIcon name="plus" size={13} />
               Nieuwe taak
             </Button>
           </>
@@ -221,7 +219,7 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
                   onClick={() => { setTaakKey((k) => k + 1); setNieuweTaakOpen(true) }}
                   className="ml-auto gap-1.5"
                 >
-                  <Plus size={12} />
+                  <SvgIcon name="plus" size={12} />
                   Nieuwe taak
                 </Button>
               </div>

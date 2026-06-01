@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useTransition } from 'react'
-import { X, Search, Check } from 'lucide-react'
+import { SvgIcon } from '@/components/ui/SvgIcon'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
@@ -99,14 +99,14 @@ export function AssigneesModal({
             aria-label="Sluiten"
             className="text-fg-3"
           >
-            <X size={15} />
+            <SvgIcon name="x" size={15} />
           </Button>
         </div>
 
         {/* Search */}
         <div className="px-4 py-3 border-b border-border-subtle shrink-0">
           <div className="flex items-center gap-2 bg-bg-2 rounded px-3 h-8">
-            <Search size={13} className="text-fg-3 shrink-0" />
+            <SvgIcon name="magnifying-glass" size={13} className="text-fg-3 shrink-0" />
             <input
               type="text"
               value={search}
@@ -152,7 +152,7 @@ export function AssigneesModal({
                       ? 'bg-blue-600 border-blue-600 text-white'
                       : 'border-border-subtle',
                   )}>
-                    {isSelected && <Check size={10} strokeWidth={3} />}
+                    {isSelected && <SvgIcon name="check" size={10} />}
                   </div>
                 </button>
               )
