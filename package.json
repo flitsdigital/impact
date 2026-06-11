@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
@@ -41,6 +45,7 @@
     "eslint-config-next": "16.2.6",
     "react-doctor": "^0.2.8",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.8"
   }
 }
