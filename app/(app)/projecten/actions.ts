@@ -87,14 +87,16 @@ export async function toggleFavorite(projectId: string): Promise<{ error?: strin
     .single()
 
   if (existing) {
-    await supabase.from('project_favorites').delete()
+    const { error } = await supabase.from('project_favorites').delete()
       .eq('project_id', projectId)
       .eq('user_id', user.id)
+    if (error) return { error: error.message }
   } else {
-    await supabase.from('project_favorites').insert({
+    const { error } = await supabase.from('project_favorites').insert({
       project_id: projectId,
       user_id: user.id,
     })
+    if (error) return { error: error.message }
   }
 
   revalidatePath('/projecten')
@@ -108,7 +110,8 @@ export async function setProjectAssignees(
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
-  await supabase.from('project_assignees').delete().eq('project_id', projectId)
+  const { error: deleteError } = await supabase.from('project_assignees').delete().eq('project_id', projectId)
+  if (deleteError) return { error: deleteError.message }
 
   if (profileIds.length === 0) return {}
 
@@ -220,7 +223,8 @@ export async function setTaskAssignees(
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
   // Delete all existing assignees
-  await supabase.from('task_assignees').delete().eq('task_id', taskId)
+  const { error: deleteError } = await supabase.from('task_assignees').delete().eq('task_id', taskId)
+  if (deleteError) return { error: deleteError.message }
 
   if (profileIds.length === 0) return {}
 
@@ -241,13 +245,14 @@ export async function addComment(
   taskId: string,
   inhoud: string,
 ): Promise<{ error?: string; id?: string }> {
+  if (!inhoud.trim()) return { error: 'Reactie mag niet leeg zijn.' }
   const supabase = await createClient()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  let user
+  try { user = await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
   const { data, error } = await supabase
     .from('task_comments')
-    .insert({ task_id: taskId, author_id: user?.id ?? null, inhoud })
+    .insert({ task_id: taskId, author_id: user.id, inhoud })
     .select('id')
     .single()
 
@@ -326,7 +331,12 @@ export async function uploadProjectFile(
   const file = formData.get('file')
   if (!(file instanceof File)) return { error: 'Geen bestand ontvangen.' }
 
-  const path = `${projectId}/${Date.now()}-${file.name}`
+  const MAX_UPLOAD_BYTES = 20 * 1024 * 1024 // 20 MB — matches the UI limit
+  if (file.size > MAX_UPLOAD_BYTES) return { error: 'Bestand is groter dan 20 MB.' }
+
+  // Keep letters/digits/dot/dash/underscore; collapse the rest to '-'
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+/, '').slice(0, 100)
+  const path = `${projectId}/${Date.now()}-${safeName || 'bestand'}`
   const bytes = Buffer.from(await file.arrayBuffer())
 
   const { error: uploadError } = await supabase.storage
