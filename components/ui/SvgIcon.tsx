@@ -37,6 +37,12 @@ const PLACEHOLDER = new Set([
   'table', 'trash', 'upload', 'user', 'x',
 ])
 
+/** Alle beschikbare icoonnamen, gesorteerd — gebruikt door de design-system pagina. */
+export const ICON_NAMES: string[] = [...AVAILABLE].sort()
+
+/** Namen die nog een rood placeholder-icoon tonen (zie PLACEHOLDER hierboven). */
+export const PLACEHOLDER_ICON_NAMES: string[] = [...PLACEHOLDER].sort()
+
 interface SvgIconProps {
   name: string
   size?: number
