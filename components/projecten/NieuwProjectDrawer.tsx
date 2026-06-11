@@ -176,8 +176,8 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
             <SvgIcon name="save" size={13} />
             {loading ? 'Aanmaken...' : 'Project aanmaken'}
             <span className="flex items-center gap-0.5 ml-1 opacity-50">
-              <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">⌘</kbd>
-              <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">↵</kbd>
+              <kbd className="inline-flex items-center justify-center size-4 text-[10px] rounded-sm bg-primary-foreground/10">⌘</kbd>
+              <kbd className="inline-flex items-center justify-center size-4 text-[10px] rounded-sm bg-primary-foreground/10">↵</kbd>
             </span>
           </Button>
         </AppDrawerFooter>
