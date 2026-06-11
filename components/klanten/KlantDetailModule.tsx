@@ -37,6 +37,7 @@ import type { Klant, KlantType, KlantStatus } from '@/types/klant'
 import type { KlantFactuur } from '@/types/factuur'
 import { FACTUUR_STATUS_CONFIG } from '@/types/factuur'
 import type { KlantProject } from '@/app/(app)/klanten/[id]/page'
+import { PROJECT_COLUMNS } from '@/types/project'
 
 // ─── Chips (copied from KlantenTable.tsx) ────────────────────────────────────
 
@@ -83,18 +84,13 @@ function StatusBadge({ status }: { status: KlantStatus }) {
 // ─── Project status chip ──────────────────────────────────────────────────────
 
 function ProjectStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    actief:       { label: 'Actief',      className: 'bg-[#0f2e18] text-foreground border-transparent' },
-    concept:      { label: 'Concept',     className: 'bg-muted text-muted-foreground border-transparent' },
-    afgerond:     { label: 'Afgerond',    className: 'bg-muted text-foreground border-transparent' },
-    gepauzeerd:   { label: 'Gepauzeerd',  className: 'bg-muted text-muted-foreground border-transparent' },
-    gearchiveerd: { label: 'Gearchiveerd',className: 'bg-muted text-muted-foreground border-transparent' },
-  }
-  const cfg = map[status] ?? { label: status, className: 'bg-muted text-muted-foreground border-transparent' }
+  const cfg = PROJECT_COLUMNS.find((c) => c.status === status)
+  if (!cfg) return <Badge className="rounded-full text-xs bg-muted text-muted-foreground border-transparent">{status}</Badge>
   return (
-    <Badge className={cn('rounded-full text-xs', cfg.className)}>
+    <span className={cn('inline-flex items-center gap-1.5 text-xs', cfg.textClass)}>
+      <SvgIcon name={cfg.iconName} size={13} className="shrink-0" />
       {cfg.label}
-    </Badge>
+    </span>
   )
 }
 
