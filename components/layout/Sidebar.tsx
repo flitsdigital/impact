@@ -19,10 +19,6 @@ const NAV = {
     { href: "/projecten", label: "Projecten", svgName: "chart-kanban" },
     { href: "/taken", label: "Taken", svgName: "check-square" },
   ],
-  financieel: [
-    { href: "/reiskosten", label: "Reiskosten", svgName: "map" },
-    { href: "/uren", label: "Urenregistratie", svgName: "clock" },
-  ],
   footer: [
     { href: "/todos", label: "Taken", svgName: "list-check", count: 7, kbds: ["⌘", "T"] },
     { href: "/gebruikers", label: "Gebruikers", svgName: "smile" },
@@ -95,7 +91,6 @@ export function Sidebar() {
 
         <NavGroup label="Klanten" items={NAV.klanten} />
         <NavGroup label="Projecten" items={NAV.projecten} />
-        <NavGroup label="Financieel" items={NAV.financieel} />
       </div>
 
       {/* Footer — always anchored at the bottom */}
