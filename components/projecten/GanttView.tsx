@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { endOfMonth, addDays, toPct, fmtDate, toLocalDateStr } from '@/lib/dates'
 import type { Project, Milestone, ProjectStatus } from '@/types/project'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -47,31 +48,6 @@ interface GanttViewProps {
   projects:      ProjectWithKlant[]
   milestones:    Milestone[]
   onDatesChange: (projectId: string, start: string | null, deadline: string | null) => void
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function endOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999)
-}
-
-function addDays(dateStr: string, days: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)   // local midnight — DST-safe
-  date.setDate(date.getDate() + days)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-function toPct(dateStr: string, rangeStart: Date, totalMs: number): number {
-  return ((new Date(dateStr).getTime() - rangeStart.getTime()) / totalMs) * 100
-}
-
-function fmtDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
-}
-
-function toLocalDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
