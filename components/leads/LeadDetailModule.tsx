@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -11,12 +10,6 @@ import { Input } from '@/components/ui/Input'
 import { StatusChip } from '@/components/ui/StatusChip'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { PillSelect } from '@/components/ui/PillSelect'
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from '@/components/ui/Card'
 import {
   Dialog,
   DialogContent,
@@ -104,7 +97,7 @@ function EditDialog({
   )
 }
 
-// ─── Contactmoment-formulier ──────────────────────────────────────────────────
+// ─── Contactmomenten-sidebar ──────────────────────────────────────────────────
 
 function todayStr(): string {
   const d = new Date()
@@ -140,7 +133,7 @@ function ContactmomentForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <PillSelect
           value={type}
           onChange={(v) => setType(v as ContactmomentType)}
@@ -158,19 +151,124 @@ function ContactmomentForm({
           aria-label="Datum contactmoment"
         />
       </div>
-      <div className="flex items-start gap-2">
-        <Input
-          value={notitie}
-          onChange={(e) => setNotitie(e.target.value)}
-          placeholder="Korte notitie (optioneel)..."
-          aria-label="Notitie contactmoment"
-        />
-        <Button type="submit" size="sm" disabled={loading} className="gap-1.5 shrink-0 h-8">
-          <SvgIcon name="plus" size={13} />
-          {loading ? 'Bezig...' : 'Toevoegen'}
+      <Input
+        value={notitie}
+        onChange={(e) => setNotitie(e.target.value)}
+        placeholder="Korte notitie (optioneel)..."
+        aria-label="Notitie contactmoment"
+      />
+      <Button type="submit" size="sm" disabled={loading} className="gap-1.5 self-end">
+        <SvgIcon name="plus" size={13} />
+        {loading ? 'Bezig...' : 'Toevoegen'}
+      </Button>
+    </form>
+  )
+}
+
+function ContactmomentenSidebar({
+  leadId,
+  momenten,
+  collapsed,
+  onToggle,
+  onAdded,
+  onDelete,
+}: {
+  leadId: string
+  momenten: LeadContactmoment[]
+  collapsed: boolean
+  onToggle: () => void
+  onAdded: (moment: LeadContactmoment) => void
+  onDelete: (momentId: string) => void
+}) {
+  if (collapsed) {
+    return (
+      <aside className="flex flex-col items-center gap-2 border-l border-border shrink-0 w-10 py-3">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onToggle}
+          aria-label="Contactmomenten uitklappen"
+          className="text-fg-3"
+        >
+          <SvgIcon name="chevrons-left" size={14} />
+        </Button>
+        <span
+          className="text-[11px] font-medium text-fg-3 tracking-wide"
+          style={{ writingMode: 'vertical-rl' }}
+        >
+          Contactmomenten
+        </span>
+        {momenten.length > 0 && (
+          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-sm bg-bg-3 text-[10px] text-fg-3">
+            {momenten.length}
+          </span>
+        )}
+      </aside>
+    )
+  }
+
+  return (
+    <aside className="flex flex-col border-l border-border shrink-0 w-[340px] min-h-0">
+      {/* Sidebar header */}
+      <div className="flex items-center justify-between pl-4 pr-2 py-2.5 border-b border-border-subtle shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-medium text-fg-1">Contactmomenten</span>
+          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-sm bg-bg-3 text-[10px] text-fg-3">
+            {momenten.length}
+          </span>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onToggle}
+          aria-label="Contactmomenten inklappen"
+          className="text-fg-3"
+        >
+          <SvgIcon name="chevrons-right" size={14} />
         </Button>
       </div>
-    </form>
+
+      {/* Add form */}
+      <div className="px-4 py-3 border-b border-border-subtle shrink-0">
+        <ContactmomentForm leadId={leadId} onAdded={onAdded} />
+      </div>
+
+      {/* Timeline */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2">
+        {momenten.length === 0 ? (
+          <p className="text-[12px] text-fg-3 py-4 text-center">Nog geen contactmomenten.</p>
+        ) : (
+          <ul className="flex flex-col divide-y divide-border-subtle">
+            {momenten.map((m) => {
+              const cfg = CONTACT_TYPE_CONFIG[m.type]
+              return (
+                <li key={m.id} className="group flex items-start gap-2.5 py-2.5">
+                  <SvgIcon name={cfg.iconName} size={13} className="text-fg-3 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] font-medium text-fg-1">{cfg.label}</span>
+                      <span className="text-[11px] text-fg-3 tabular-nums">{fmtDate(m.datum)}</span>
+                    </div>
+                    {m.notitie && (
+                      <p className="text-[12px] text-fg-2 whitespace-pre-wrap mt-0.5">{m.notitie}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => onDelete(m.id)}
+                    className="text-fg-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    aria-label="Contactmoment verwijderen"
+                  >
+                    <SvgIcon name="trash" size={12} />
+                  </Button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+    </aside>
   )
 }
 
@@ -186,7 +284,12 @@ export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMo
   const [lead, setLead] = useState(initialLead)
   const [momenten, setMomenten] = useState(initialMomenten)
   const [editOpen, setEditOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [, startTransition] = useTransition()
+
+  // Inline beschrijving (notities-veld) bewerken — zelfde patroon als projectdetail
+  const [editingNotities, setEditingNotities] = useState(false)
+  const [notitiesVal, setNotitiesVal] = useState(lead.notities ?? '')
 
   const statusCol = LEAD_COLUMNS.find((c) => c.status === lead.status)
 
@@ -194,6 +297,19 @@ export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMo
     if (newStatus === lead.status) return
     setLead((l) => ({ ...l, status: newStatus }))
     startTransition(() => { updateLead(lead.id, { status: newStatus }) })
+  }
+
+  function handleNotitiesSave() {
+    const next = notitiesVal.trim() || null
+    setEditingNotities(false)
+    if (next === (lead.notities ?? null)) return
+    setLead((l) => ({ ...l, notities: next }))
+    startTransition(() => { updateLead(lead.id, { notities: next }) })
+  }
+
+  function handleNotitiesCancel() {
+    setNotitiesVal(lead.notities ?? '')
+    setEditingNotities(false)
   }
 
   function handleMomentAdded(moment: LeadContactmoment) {
@@ -206,178 +322,180 @@ export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMo
   }
 
   return (
-    <div className="flex flex-col h-full overflow-auto">
-      {/* Header */}
-      <div className="border-b border-border shrink-0">
-        <div className="flex items-center justify-between pl-8 pr-3 py-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <Link
-              href="/leads"
-              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              aria-label="Terug naar leads"
-            >
-              <SvgIcon name="arrow-left" size={16} />
-            </Link>
-            <span className="text-sm font-medium text-foreground truncate">{lead.bedrijfsnaam}</span>
+    <div className="flex flex-col h-full overflow-hidden">
 
-            {/* Status — klik om te wisselen */}
-            {statusCol && (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  className="flex items-center gap-1 rounded-full hover:bg-bg-3 px-2 py-1 transition-colors outline-none"
-                  title="Status wijzigen"
-                >
-                  <StatusChip
-                    iconName={statusCol.iconName}
-                    label={statusCol.label}
-                    textClass={statusCol.textClass}
-                    iconSize={13}
-                    className="text-[12px]"
-                  />
-                  <SvgIcon name="caret-down" size={10} className="text-fg-3" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="min-w-[160px]">
-                  {LEAD_COLUMNS.map((col) => (
-                    <DropdownMenuItem
-                      key={col.status}
-                      onSelect={() => handleStatusChange(col.status)}
-                      className={cn(
-                        'text-[12px]',
-                        lead.status === col.status ? 'text-fg-1 font-medium' : 'text-fg-2',
-                      )}
-                    >
-                      <SvgIcon name={col.iconName} size={13} className={col.textClass} />
-                      {col.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <SvgIcon name="pencil" size={14} className="mr-1.5" />
-              Bewerken
-            </Button>
-          </div>
+      {/* ── Breadcrumb bar ──────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border shrink-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => router.push('/leads')}
+            className="text-fg-3 shrink-0"
+            aria-label="Terug naar leads"
+          >
+            <SvgIcon name="arrow-left" size={15} />
+          </Button>
+
+          <SvgIcon name="user-plus" size={14} className="text-fg-3 shrink-0" />
+          <span className="text-[12px] text-fg-3">Leads</span>
+          <SvgIcon name="chevron-right" size={10} className="text-fg-disabled shrink-0" />
+          <span className="text-[12px] text-fg-1 font-medium truncate">{lead.bedrijfsnaam}</span>
         </div>
+
+        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="shrink-0">
+          <SvgIcon name="pencil" size={14} className="mr-1.5" />
+          Bewerken
+        </Button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto flex flex-col gap-6">
+      {/* ── Content + sidebar ──────────────────────────────────────────────── */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
 
-          {/* Leadgegevens */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Leadgegevens</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                {lead.contactpersoon && (
-                  <div>
-                    <dt className="text-muted-foreground text-xs mb-0.5">Contactpersoon</dt>
-                    <dd className="font-medium">{lead.contactpersoon}</dd>
-                  </div>
-                )}
-                {lead.email && (
-                  <div>
-                    <dt className="text-muted-foreground text-xs mb-0.5">Email</dt>
-                    <dd>
-                      <a href={`mailto:${lead.email}`} className="text-foreground hover:underline">
-                        {lead.email}
-                      </a>
-                    </dd>
-                  </div>
-                )}
-                {lead.telefoon && (
-                  <div>
-                    <dt className="text-muted-foreground text-xs mb-0.5">Telefoon</dt>
-                    <dd>
-                      <a href={`tel:${lead.telefoon}`} className="text-foreground hover:underline">
-                        {lead.telefoon}
-                      </a>
-                    </dd>
-                  </div>
-                )}
-                <div>
-                  <dt className="text-muted-foreground text-xs mb-0.5">Bron</dt>
-                  <dd>{BRON_LABEL[lead.bron]}</dd>
-                </div>
-                {lead.waarde != null && (
-                  <div>
-                    <dt className="text-muted-foreground text-xs mb-0.5">Geschatte waarde</dt>
-                    <dd className="font-medium tabular-nums">{formatEur(lead.waarde)}</dd>
-                  </div>
-                )}
-                {!lead.contactpersoon && !lead.email && !lead.telefoon && (
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground text-xs">
-                      Nog geen contactgegevens.{' '}
-                      <button
-                        type="button"
-                        onClick={() => setEditOpen(true)}
-                        className="underline underline-offset-2 cursor-pointer"
+        {/* Main content */}
+        <div className="flex-1 min-w-0 overflow-y-auto">
+          <div className="w-full max-w-8/12 mx-auto px-8 pt-6 pb-4 flex flex-col gap-3">
+
+            {/* Title */}
+            <h1 className="text-[28px] font-semibold text-fg-1 leading-tight">
+              {lead.bedrijfsnaam}
+            </h1>
+
+            {/* Beschrijving — klik om inline te bewerken */}
+            {editingNotities ? (
+              <textarea
+                ref={(el) => { el?.focus() }}
+                value={notitiesVal}
+                onChange={(e) => setNotitiesVal(e.target.value)}
+                onBlur={handleNotitiesSave}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    handleNotitiesCancel()
+                  }
+                }}
+                rows={3}
+                placeholder="Voeg een korte beschrijving toe..."
+                aria-label="Leadbeschrijving"
+                className="bg-transparent outline-none resize-none text-[13px] text-fg-1 placeholder:text-fg-3 w-full"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingNotities(true)}
+                className="text-[13px] text-fg-3 text-left w-full whitespace-pre-wrap hover:text-fg-2 transition-colors"
+                title="Beschrijving bewerken"
+              >
+                {lead.notities || 'Voeg een korte beschrijving toe...'}
+              </button>
+            )}
+
+            {/* ── Metadata row 1: status + bron + waarde ── */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {/* Status — klik om te wijzigen */}
+              {statusCol && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className="flex items-center gap-1 rounded hover:bg-bg-3 px-1 py-0.5 -mx-1 transition-colors outline-none"
+                    title="Status wijzigen"
+                  >
+                    <StatusChip
+                      iconName={statusCol.iconName}
+                      label={statusCol.label}
+                      textClass={statusCol.textClass}
+                      iconSize={13}
+                      labelClass="text-[12px] text-fg-2"
+                    />
+                    <SvgIcon name="caret-down" size={10} className="text-fg-3" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="min-w-[160px]">
+                    {LEAD_COLUMNS.map((col) => (
+                      <DropdownMenuItem
+                        key={col.status}
+                        onSelect={() => handleStatusChange(col.status)}
+                        className={cn(
+                          'text-[12px]',
+                          lead.status === col.status ? 'text-fg-1 font-medium' : 'text-fg-2',
+                        )}
                       >
-                        Toevoegen
-                      </button>
-                    </p>
-                  </div>
-                )}
-              </dl>
-              {lead.notities && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <p className="text-muted-foreground text-xs mb-1">Notities</p>
-                  <p className="text-sm whitespace-pre-wrap">{lead.notities}</p>
+                        <SvgIcon name={col.iconName} size={13} className={col.textClass} />
+                        {col.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              {/* Bron */}
+              <div className="flex items-center gap-1.5">
+                <SvgIcon name="signal-bars" size={13} className="text-fg-3" />
+                <span className="text-[12px] text-fg-2">{BRON_LABEL[lead.bron]}</span>
+              </div>
+
+              {/* Waarde */}
+              {lead.waarde != null && (
+                <div className="flex items-center gap-1.5">
+                  <SvgIcon name="coin-vertical" size={13} className="text-fg-3" />
+                  <span className="text-[12px] text-fg-2 tabular-nums">{formatEur(lead.waarde)}</span>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Contactmomenten */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contactmomenten</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <ContactmomentForm leadId={lead.id} onAdded={handleMomentAdded} />
+              {/* Aangemaakt */}
+              <div className="flex items-center gap-1.5">
+                <SvgIcon name="calendar" size={13} className="text-fg-3" />
+                <span className="text-[12px] text-fg-2 tabular-nums">{fmtDate(lead.created_at)}</span>
+              </div>
+            </div>
 
-              {momenten.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Nog geen contactmomenten.</p>
-              ) : (
-                <ul className="flex flex-col divide-y divide-border">
-                  {momenten.map((m) => {
-                    const cfg = CONTACT_TYPE_CONFIG[m.type]
-                    return (
-                      <li key={m.id} className="group flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
-                        <SvgIcon name={cfg.iconName} size={14} className="text-fg-3 shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{cfg.label}</span>
-                            <span className="text-xs text-muted-foreground tabular-nums">{fmtDate(m.datum)}</span>
-                          </div>
-                          {m.notitie && (
-                            <p className="text-sm text-fg-2 whitespace-pre-wrap mt-0.5">{m.notitie}</p>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => handleMomentDelete(m.id)}
-                          className="text-fg-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                          aria-label="Contactmoment verwijderen"
-                        >
-                          <SvgIcon name="trash" size={13} />
-                        </Button>
-                      </li>
-                    )
-                  })}
-                </ul>
+            {/* ── Metadata row 2: contactgegevens ── */}
+            <div className="flex items-center gap-4 flex-wrap">
+              {lead.contactpersoon && (
+                <div className="flex items-center gap-1.5">
+                  <SvgIcon name="user" size={13} className="text-fg-3" />
+                  <span className="text-[12px] text-fg-2">{lead.contactpersoon}</span>
+                </div>
               )}
-            </CardContent>
-          </Card>
-
+              {lead.email && (
+                <a
+                  href={`mailto:${lead.email}`}
+                  className="flex items-center gap-1.5 text-[12px] text-fg-2 hover:text-fg-1 transition-colors"
+                >
+                  <SvgIcon name="inbox" size={13} className="text-fg-3" />
+                  {lead.email}
+                </a>
+              )}
+              {lead.telefoon && (
+                <a
+                  href={`tel:${lead.telefoon}`}
+                  className="flex items-center gap-1.5 text-[12px] text-fg-2 hover:text-fg-1 transition-colors"
+                >
+                  <SvgIcon name="user-clock" size={13} className="text-fg-3" />
+                  {lead.telefoon}
+                </a>
+              )}
+              {!lead.contactpersoon && !lead.email && !lead.telefoon && (
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(true)}
+                  className="flex items-center gap-1 text-[12px] text-fg-3 hover:text-fg-1 transition-colors"
+                >
+                  <SvgIcon name="plus" size={12} />
+                  Contactgegevens toevoegen
+                </button>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Contactmomenten-sidebar */}
+        <ContactmomentenSidebar
+          leadId={lead.id}
+          momenten={momenten}
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((v) => !v)}
+          onAdded={handleMomentAdded}
+          onDelete={handleMomentDelete}
+        />
       </div>
 
       {/* Bewerken-dialog */}
