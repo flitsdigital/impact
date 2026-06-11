@@ -54,6 +54,26 @@ export async function createKlant(
   return { success: true }
 }
 
+export async function updateKlant(
+  id: string,
+  input: unknown,
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  const parsed = klantSchema.partial().safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Validatiefout' }
+  }
+
+  const { error } = await supabase.from('klanten').update(parsed.data).eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath('/klanten')
+  revalidatePath(`/klanten/${id}`)
+  return {}
+}
+
 export async function deleteKlant(id: string): Promise<{ error?: string }> {
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
