@@ -23,9 +23,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu'
-import type { Lead, LeadStatus, LeadContactmoment, ContactmomentType } from '@/types/lead'
+import { BijlageModal } from '@/components/ui/BijlageModal'
+import { DocumentIcon } from '@/components/ui/DocumentIcon'
+import type { Lead, LeadStatus, LeadContactmoment, LeadDocument, ContactmomentType } from '@/types/lead'
 import { LEAD_COLUMNS, BRON_LABEL, CONTACT_TYPE_CONFIG } from '@/types/lead'
-import { updateLead, addContactmoment, deleteContactmoment } from '@/app/(app)/leads/actions'
+import {
+  updateLead,
+  addContactmoment,
+  deleteContactmoment,
+  addLeadDocument,
+  deleteLeadDocument,
+  uploadLeadFile,
+} from '@/app/(app)/leads/actions'
 import { fmtDate } from '@/lib/dates'
 import { formatEur } from '@/lib/format'
 import { LeadFormFields } from './LeadFormFields'
@@ -286,13 +295,20 @@ function ContactmomentenSidebar({
 interface LeadDetailModuleProps {
   lead: Lead
   contactmomenten: LeadContactmoment[]
+  documents: LeadDocument[]
 }
 
-export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMomenten }: LeadDetailModuleProps) {
+export function LeadDetailModule({
+  lead: initialLead,
+  contactmomenten: initialMomenten,
+  documents: initialDocuments,
+}: LeadDetailModuleProps) {
   const router = useRouter()
   const [lead, setLead] = useState(initialLead)
   const [momenten, setMomenten] = useState(initialMomenten)
+  const [documents, setDocuments] = useState(initialDocuments)
   const [editOpen, setEditOpen] = useState(false)
+  const [bijlageOpen, setBijlageOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [, startTransition] = useTransition()
 
@@ -463,6 +479,30 @@ export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMo
                   Contactgegevens toevoegen
                 </button>
               )}
+
+              {/* Documenten */}
+              {documents.map((doc) => (
+                <a
+                  key={doc.id}
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[12px] text-fg-2 hover:text-fg-1 transition-colors"
+                >
+                  <DocumentIcon type={doc.type} url={doc.url} size={12} />
+                  {doc.naam}
+                </a>
+              ))}
+
+              {/* Bijlage toevoegen */}
+              <button
+                type="button"
+                onClick={() => setBijlageOpen(true)}
+                className="flex items-center gap-1 text-[12px] text-fg-3 hover:text-fg-1 transition-colors"
+              >
+                <SvgIcon name="plus" size={12} />
+                Bijlage
+              </button>
             </div>
 
             <div className="h-px bg-border-subtle shrink-0 my-2" />
@@ -518,6 +558,22 @@ export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMo
           onDelete={handleMomentDelete}
         />
       </div>
+
+      {/* Bijlagen-modal */}
+      <BijlageModal
+        open={bijlageOpen}
+        onOpenChange={setBijlageOpen}
+        documents={documents}
+        onDocumentsChange={setDocuments}
+        makeDocument={(base) => ({
+          ...base,
+          lead_id: lead.id,
+          created_at: new Date().toISOString(),
+        })}
+        onAddDocument={(type, naam, url) => addLeadDocument(lead.id, type, naam, url)}
+        onUploadFile={(formData) => uploadLeadFile(lead.id, formData)}
+        onDeleteDocument={(docId) => deleteLeadDocument(docId)}
+      />
 
       {/* Bewerken-dialog */}
       <EditDialog

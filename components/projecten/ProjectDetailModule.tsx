@@ -28,7 +28,7 @@ import { KanbanBoard } from './KanbanBoard'
 import { TakenLijst } from '@/components/taken/TakenLijst'
 import { TaakDetailDrawer } from './TaakDetailDrawer'
 import { NieuweTaakDrawer } from './NieuweTaakDrawer'
-import { BijlageModal } from './BijlageModal'
+import { BijlageModal } from '@/components/ui/BijlageModal'
 import { AssigneesModal } from './AssigneesModal'
 import type {
   ProjectWithRelations,
@@ -42,9 +42,16 @@ import type {
 } from '@/types/project'
 import { PRIORITY_CONFIG, PRIORITY_ICON, PROJECT_COLUMNS } from '@/types/project'
 import type { TeamMember } from '@/types/team'
-import { moveTask, updateProject, toggleFavorite } from '@/app/(app)/projecten/actions'
+import {
+  moveTask,
+  updateProject,
+  toggleFavorite,
+  addProjectDocument,
+  deleteProjectDocument,
+  uploadProjectFile,
+} from '@/app/(app)/projecten/actions'
 import { fmtDate } from '@/lib/dates'
-import { DocumentIcon } from '@/components/projecten/DocumentIcon'
+import { DocumentIcon } from '@/components/ui/DocumentIcon'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -616,9 +623,16 @@ export function ProjectDetailModule({
       <BijlageModal
         open={bijlageOpen}
         onOpenChange={setBijlageOpen}
-        projectId={project.id}
         documents={project.documents}
         onDocumentsChange={handleDocumentsChange}
+        makeDocument={(base) => ({
+          ...base,
+          project_id: project.id,
+          created_at: new Date().toISOString(),
+        })}
+        onAddDocument={(type, naam, url) => addProjectDocument(project.id, type, naam, url)}
+        onUploadFile={(formData) => uploadProjectFile(project.id, formData)}
+        onDeleteDocument={(docId) => deleteProjectDocument(docId)}
       />
 
       <AssigneesModal

@@ -26,11 +26,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { BijlageModal, type BijlageDocument } from '@/components/ui/BijlageModal'
 import { DemoBlock, SectionHeading } from './DemoBlock'
 
 export function OverlaysSection() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [bijlageOpen, setBijlageOpen] = useState(false)
+  const [demoDocs, setDemoDocs] = useState<BijlageDocument[]>([
+    { id: 'demo-1', type: 'link', naam: 'Design brief', url: 'https://docs.google.com/document/d/voorbeeld' },
+  ])
 
   return (
     <section className="flex flex-col gap-8">
@@ -106,6 +111,24 @@ export function OverlaysSection() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </DemoBlock>
+
+      <DemoBlock
+        title="BijlageModal"
+        path="@/components/ui/BijlageModal"
+        description="Generieke bijlagen-modal (link toevoegen + PDF-upload) met DocumentIcon per type. Entiteit-specifieke server actions komen via props; deze demo gebruikt lokale state."
+      >
+        <Button size="sm" variant="outline" onClick={() => setBijlageOpen(true)}>Open BijlageModal</Button>
+        <BijlageModal
+          open={bijlageOpen}
+          onOpenChange={setBijlageOpen}
+          documents={demoDocs}
+          onDocumentsChange={setDemoDocs}
+          makeDocument={(base) => base}
+          onAddDocument={async () => ({ id: `demo-${demoDocs.length + 1}` })}
+          onUploadFile={async () => ({ error: 'Upload is uitgeschakeld in deze demo.' })}
+          onDeleteDocument={() => {}}
+        />
       </DemoBlock>
 
       <DemoBlock

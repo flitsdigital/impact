@@ -3,10 +3,9 @@
 import { useState } from 'react'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { cn } from '@/lib/utils'
-import type { ProjectDocument } from '@/types/project'
 
 interface DocumentIconProps {
-  type: ProjectDocument['type']
+  type: 'link' | 'file'
   url:  string
   size?: number
   className?: string

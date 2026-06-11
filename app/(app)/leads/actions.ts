@@ -111,6 +111,78 @@ export async function deleteLead(leadId: string): Promise<{ error?: string }> {
   return {}
 }
 
+// ─── Documenten / bijlagen ────────────────────────────────────────────────────
+
+export async function addLeadDocument(
+  leadId: string,
+  type: 'link' | 'file',
+  naam: string,
+  url: string,
+): Promise<{ error?: string; id?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  const { data, error } = await supabase
+    .from('lead_documents')
+    .insert({ lead_id: leadId, type, naam, url })
+    .select('id')
+    .single()
+
+  if (error) return { error: error.message }
+
+  revalidateLeads(leadId)
+  return { id: data.id }
+}
+
+export async function deleteLeadDocument(documentId: string): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  const { data: doc } = await supabase
+    .from('lead_documents')
+    .select('lead_id, type, url')
+    .eq('id', documentId)
+    .single()
+
+  if (doc?.type === 'file' && doc.url) {
+    // Rijen slaan het kale storage-pad op.
+    await supabase.storage.from('lead-docs').remove([doc.url])
+  }
+
+  const { error } = await supabase.from('lead_documents').delete().eq('id', documentId)
+  if (error) return { error: error.message }
+
+  revalidateLeads(doc?.lead_id)
+  return {}
+}
+
+export async function uploadLeadFile(
+  leadId: string,
+  formData: FormData,
+): Promise<{ error?: string; url?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  const file = formData.get('file')
+  if (!(file instanceof File)) return { error: 'Geen bestand ontvangen.' }
+
+  const MAX_UPLOAD_BYTES = 20 * 1024 * 1024 // 20 MB — matcht de UI-limiet
+  if (file.size > MAX_UPLOAD_BYTES) return { error: 'Bestand is groter dan 20 MB.' }
+
+  // Letters/cijfers/punt/streepje/underscore behouden; de rest wordt '-'
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+/, '').slice(0, 100)
+  const path = `${leadId}/${Date.now()}-${safeName || 'bestand'}`
+  const bytes = Buffer.from(await file.arrayBuffer())
+
+  const { error: uploadError } = await supabase.storage
+    .from('lead-docs')
+    .upload(path, bytes, { contentType: file.type, upsert: false })
+
+  if (uploadError) return { error: uploadError.message }
+
+  return { url: path }
+}
+
 // ─── Contactmomenten ──────────────────────────────────────────────────────────
 
 export async function addContactmoment(

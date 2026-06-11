@@ -26,8 +26,18 @@ export interface LeadContactmoment {
   created_at: string
 }
 
+export interface LeadDocument {
+  id:         string
+  lead_id:    string
+  type:       'link' | 'file'
+  naam:       string
+  url:        string
+  created_at: string
+}
+
 export interface LeadWithRelations extends Lead {
   contactmomenten: LeadContactmoment[]
+  documents:       LeadDocument[]
 }
 
 // ─── Pipeline-kolommen ────────────────────────────────────────────────────────

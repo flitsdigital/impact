@@ -117,7 +117,8 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `LeadFormFields` | `components/leads/LeadFormFields` | Gedeelde veldenset lead-formulier (`lead?` voor defaults, `idPrefix`) |
 | `NieuweLeadDrawer` | `components/leads/NieuweLeadDrawer` | Aanmaak-drawer voor leads |
 | `KanbanBoard` (taak-adapter) | `components/projecten/KanbanBoard` | Dunne adapter: KANBAN_COLUMNS + TaakKaart op het generieke bord |
-| `DocumentIcon` | `components/projecten/DocumentIcon` | Bestandstype-icoon bij bijlagen |
+| `DocumentIcon` | `components/ui/DocumentIcon` | Bijlage-icoon: Google-producticoon/favicon voor links, file-icoon voor bestanden |
+| `BijlageModal` | `components/ui/BijlageModal` | Generieke bijlagen-modal (link + PDF-upload); entiteit-acties via props (`onAddDocument`, `onUploadFile`, `onDeleteDocument`, `makeDocument`) — gebruikt door project- én lead-detail |
 
 ### Status-configs (bron van waarheid)
 

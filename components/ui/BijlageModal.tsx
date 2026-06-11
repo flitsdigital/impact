@@ -5,27 +5,45 @@ import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { DocumentIcon } from '@/components/projecten/DocumentIcon'
-import type { ProjectDocument } from '@/types/project'
-import { addProjectDocument, deleteProjectDocument, uploadProjectFile } from '@/app/(app)/projecten/actions'
+import { DocumentIcon } from '@/components/ui/DocumentIcon'
 
 type TabId = 'link' | 'bestand'
 
-interface BijlageModalProps {
-  open:          boolean
-  onOpenChange:  (open: boolean) => void
-  projectId:     string
-  documents:     ProjectDocument[]
-  onDocumentsChange: (docs: ProjectDocument[]) => void
+/** Minimale vorm van een bijlage — project- en lead-documenten voldoen hieraan. */
+export interface BijlageDocument {
+  id:   string
+  type: 'link' | 'file'
+  naam: string
+  url:  string
 }
 
-export function BijlageModal({
+/**
+ * Generieke bijlagen-modal (links + bestandsupload), gedeeld door projecten en
+ * leads. De entiteit-specifieke server actions komen via props binnen;
+ * `makeDocument` verrijkt het basis-document met entiteit-velden (project_id,
+ * lead_id, created_at) voor de optimistische lijst-update.
+ */
+interface BijlageModalProps<T extends BijlageDocument> {
+  open:          boolean
+  onOpenChange:  (open: boolean) => void
+  documents:     T[]
+  onDocumentsChange: (docs: T[]) => void
+  makeDocument:  (base: BijlageDocument) => T
+  onAddDocument: (type: 'link' | 'file', naam: string, url: string) => Promise<{ error?: string; id?: string }>
+  onUploadFile:  (formData: FormData) => Promise<{ error?: string; url?: string }>
+  onDeleteDocument: (docId: string) => void
+}
+
+export function BijlageModal<T extends BijlageDocument>({
   open,
   onOpenChange,
-  projectId,
   documents,
   onDocumentsChange,
-}: BijlageModalProps) {
+  makeDocument,
+  onAddDocument,
+  onUploadFile,
+  onDeleteDocument,
+}: BijlageModalProps<T>) {
   const [tab, setTab]         = useState<TabId>('link')
   const [naam, setNaam]       = useState('')
   const [url, setUrl]         = useState('')
@@ -56,18 +74,13 @@ export function BijlageModal({
     if (!/^https?:\/\//i.test(fullUrl)) fullUrl = 'https://' + fullUrl
 
     setError(null)
-    const result = await addProjectDocument(projectId, 'link', naam.trim(), fullUrl)
+    const result = await onAddDocument('link', naam.trim(), fullUrl)
     if (result.error) { setError(result.error); return }
 
-    const newDoc: ProjectDocument = {
-      id: result.id!,
-      project_id: projectId,
-      type: 'link',
-      naam: naam.trim(),
-      url: fullUrl,
-      created_at: new Date().toISOString(),
-    }
-    onDocumentsChange([...documents, newDoc])
+    onDocumentsChange([
+      ...documents,
+      makeDocument({ id: result.id!, type: 'link', naam: naam.trim(), url: fullUrl }),
+    ])
     resetForm()
   }
 
@@ -87,7 +100,7 @@ export function BijlageModal({
 
     const formData = new FormData()
     formData.append('file', file)
-    const uploadResult = await uploadProjectFile(projectId, formData)
+    const uploadResult = await onUploadFile(formData)
 
     if (uploadResult.error) {
       setError(uploadResult.error)
@@ -95,22 +108,17 @@ export function BijlageModal({
       return
     }
 
-    const docResult = await addProjectDocument(projectId, 'file', fileName, uploadResult.url!)
+    const docResult = await onAddDocument('file', fileName, uploadResult.url!)
     if (docResult.error) {
       setError(docResult.error)
       setUploading(false)
       return
     }
 
-    const newDoc: ProjectDocument = {
-      id: docResult.id!,
-      project_id: projectId,
-      type: 'file',
-      naam: fileName,
-      url: uploadResult.url!,
-      created_at: new Date().toISOString(),
-    }
-    onDocumentsChange([...documents, newDoc])
+    onDocumentsChange([
+      ...documents,
+      makeDocument({ id: docResult.id!, type: 'file', naam: fileName, url: uploadResult.url! }),
+    ])
     resetForm()
     setUploading(false)
     if (fileRef.current) fileRef.current.value = ''
@@ -118,7 +126,7 @@ export function BijlageModal({
 
   function handleDeleteDoc(docId: string) {
     onDocumentsChange(documents.filter((d) => d.id !== docId))
-    startTransition(() => { deleteProjectDocument(docId) })
+    startTransition(() => { onDeleteDocument(docId) })
   }
 
   return (
@@ -181,8 +189,9 @@ export function BijlageModal({
           {tab === 'link' && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">Naam</label>
+                <label htmlFor="bijlage-link-naam" className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">Naam</label>
                 <Input
+                  id="bijlage-link-naam"
                   type="text"
                   value={naam}
                   onChange={(e) => setNaam(e.target.value)}
@@ -191,8 +200,9 @@ export function BijlageModal({
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">URL</label>
+                <label htmlFor="bijlage-link-url" className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">URL</label>
                 <Input
+                  id="bijlage-link-url"
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
@@ -215,8 +225,9 @@ export function BijlageModal({
           {tab === 'bestand' && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">Naam (optioneel)</label>
+                <label htmlFor="bijlage-bestand-naam" className="text-[11px] text-fg-3 font-medium uppercase tracking-wide">Naam (optioneel)</label>
                 <Input
+                  id="bijlage-bestand-naam"
                   type="text"
                   value={naam}
                   onChange={(e) => setNaam(e.target.value)}
