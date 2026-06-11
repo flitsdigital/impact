@@ -73,9 +73,10 @@ export async function createPost(
   // Assignees
   const assigneeIds = parseAssigneeIds(formData.get('assignee_ids'))
   if (assigneeIds.length > 0) {
-    await supabase.from('post_assignees').insert(
+    const { error: insertAssigneesError } = await supabase.from('post_assignees').insert(
       assigneeIds.map((uid) => ({ post_id: data.id, user_id: uid }))
     )
+    if (insertAssigneesError) return { error: insertAssigneesError.message }
   }
 
   // Audit log
@@ -136,12 +137,14 @@ export async function updatePost(
   if (error) return { error: error.message }
 
   // Replace assignees atomically
-  await supabase.from('post_assignees').delete().eq('post_id', id)
+  const { error: deleteAssigneesError } = await supabase.from('post_assignees').delete().eq('post_id', id)
+  if (deleteAssigneesError) return { error: deleteAssigneesError.message }
   const assigneeIds = parseAssigneeIds(formData.get('assignee_ids'))
   if (assigneeIds.length > 0) {
-    await supabase.from('post_assignees').insert(
+    const { error: insertAssigneesError } = await supabase.from('post_assignees').insert(
       assigneeIds.map((uid) => ({ post_id: id, user_id: uid }))
     )
+    if (insertAssigneesError) return { error: insertAssigneesError.message }
   }
 
   await supabase.from('post_logs').insert({ post_id: id, action: 'updated' })
