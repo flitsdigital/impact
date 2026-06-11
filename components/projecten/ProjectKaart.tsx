@@ -2,20 +2,10 @@
 
 import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
-import { Avatar } from '@/components/ui/Avatar'
+import { AvatarStack } from '@/components/ui/AvatarStack'
 import { PRIORITY_CONFIG, PRIORITY_ICON } from '@/types/project'
 import type { Project, ProjectAssigneeProfile } from '@/types/project'
-
-function fmtDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('nl-NL', {
-    day: 'numeric',
-    month: 'short',
-  })
-}
-
-function isOverdue(dateStr: string): boolean {
-  return new Date(dateStr + 'T23:59:59') < new Date()
-}
+import { fmtDate, isOverdue } from '@/lib/dates'
 
 interface ProjectKaartProps {
   project:    Project & { klanten?: { id: string; naam: string } | null }
@@ -54,24 +44,15 @@ export function ProjectKaart({ project, assignees, taskCounts, isDragging, onCli
         {/* Row 1: assignees + project number | priority */}
         <div className="flex items-center justify-between gap-2 w-full">
           <div className="flex items-center gap-1.5 min-w-0">
-            {assignees.length > 0 && (
-              <div className="flex items-center shrink-0">
-                {assignees.slice(0, 3).map((a, i) => (
-                  <Avatar
-                    key={a.profile_id}
-                    src={a.profiles?.avatar_url}
-                    name={a.profiles?.full_name ?? undefined}
-                    size={14}
-                    className={cn(i > 0 && '-ml-[1.4px] ring-1 ring-bg-2')}
-                  />
-                ))}
-                {assignees.length > 3 && (
-                  <span className="-ml-[1.4px] size-[14px] rounded-full bg-bg-3 text-[9px] flex items-center justify-center text-fg-3 ring-1 ring-bg-2">
-                    +{assignees.length - 3}
-                  </span>
-                )}
-              </div>
-            )}
+            <AvatarStack
+              people={assignees.map((a) => ({
+                key: a.profile_id,
+                src: a.profiles?.avatar_url,
+                name: a.profiles?.full_name ?? undefined,
+              }))}
+              size={14}
+              overlap={1.4}
+            />
             <span className="text-[12px] text-fg-3 font-medium tracking-[-0.12px] shrink-0">
               FLT-{project.project_number}
             </span>

@@ -1,21 +1,11 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { Avatar } from '@/components/ui/Avatar'
+import { AvatarStack } from '@/components/ui/AvatarStack'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import type { TaskWithRelations } from '@/types/project'
 import { PRIORITY_CONFIG, PRIORITY_ICON } from '@/types/project'
-
-function fmtDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('nl-NL', {
-    day: 'numeric',
-    month: 'short',
-  })
-}
-
-function isOverdue(dateStr: string): boolean {
-  return new Date(dateStr + 'T23:59:59') < new Date()
-}
+import { fmtDate, isOverdue } from '@/lib/dates'
 
 interface TaakKaartProps {
   task:        TaskWithRelations
@@ -54,24 +44,15 @@ export function TaakKaart({ task, isDragging, showProject = false, onClick }: Ta
       {/* Row 1: assignee avatars + task ID | priority */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          {assignees.length > 0 && (
-            <div className="flex items-center shrink-0">
-              {assignees.slice(0, 3).map((a, i) => (
-                <Avatar
-                  key={a.profile_id}
-                  src={a.profiles?.avatar_url}
-                  name={a.profiles?.full_name ?? undefined}
-                  size={14}
-                  className={cn(i > 0 && '-ml-[1.4px] ring-1 ring-bg-2')}
-                />
-              ))}
-              {assignees.length > 3 && (
-                <span className="-ml-[1.4px] size-[14px] rounded-full bg-bg-3 text-[9px] flex items-center justify-center text-fg-3 ring-1 ring-bg-2">
-                  +{assignees.length - 3}
-                </span>
-              )}
-            </div>
-          )}
+          <AvatarStack
+            people={assignees.map((a) => ({
+              key: a.profile_id,
+              src: a.profiles?.avatar_url,
+              name: a.profiles?.full_name ?? undefined,
+            }))}
+            size={14}
+            overlap={1.4}
+          />
           <span className="text-[12px] font-mono text-fg-3 shrink-0">
             FLT-{task.task_number}
           </span>

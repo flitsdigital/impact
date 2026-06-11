@@ -6,9 +6,10 @@ interface AvatarProps {
   name?: string
   size?: number
   className?: string
+  style?: React.CSSProperties
 }
 
-export function Avatar({ src, name, size = 20, className }: AvatarProps) {
+export function Avatar({ src, name, size = 20, className, style }: AvatarProps) {
   const initials = name
     ? name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
@@ -25,6 +26,7 @@ export function Avatar({ src, name, size = 20, className }: AvatarProps) {
         fontSize: size * 0.4,
         color: "var(--fg-2)",
         fontWeight: 600,
+        ...style,
       }}
     >
       {src ? (

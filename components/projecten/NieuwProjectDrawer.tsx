@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Calendar } from '@/components/ui/calendar'
 import { nl } from 'date-fns/locale'
 import { createProject } from '@/app/(app)/projecten/actions'
+import { fmtDate, parseDate } from '@/lib/dates'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import type { ProjectStatus } from '@/types/project'
 
@@ -232,16 +233,14 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
                 )}
               >
                 <SvgIcon name="calendar" size={11} />
-                {deadline
-                  ? new Date(deadline + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
-                  : 'Deadline'}
+                {deadline ? fmtDate(deadline) : 'Deadline'}
               </button>
               {openChip === 'deadline' && (
                 <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg p-1">
                   <Calendar
                     mode="single"
-                    selected={deadline ? new Date(deadline + 'T12:00:00') : undefined}
-                    defaultMonth={deadline ? new Date(deadline + 'T12:00:00') : undefined}
+                    selected={deadline ? parseDate(deadline) : undefined}
+                    defaultMonth={deadline ? parseDate(deadline) : undefined}
                     onSelect={(d) => {
                       if (!d) return
                       const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

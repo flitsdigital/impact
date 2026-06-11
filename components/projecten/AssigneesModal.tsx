@@ -5,6 +5,7 @@ import { SvgIcon } from '@/components/ui/SvgIcon'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
+import { SearchInput } from '@/components/ui/SearchInput'
 import { setProjectAssignees } from '@/app/(app)/projecten/actions'
 import type { ProjectAssigneeProfile } from '@/types/project'
 import type { TeamMember } from '@/types/team'
@@ -105,17 +106,13 @@ export function AssigneesModal({
 
         {/* Search */}
         <div className="px-4 py-3 border-b border-border-subtle shrink-0">
-          <div className="flex items-center gap-2 bg-bg-2 rounded px-3 h-8">
-            <SvgIcon name="magnifying-glass" size={13} className="text-fg-3 shrink-0" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Zoek teamlid..."
-              autoFocus
-              className="flex-1 bg-transparent text-[12px] text-fg-1 placeholder:text-fg-disabled outline-none"
-            />
-          </div>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Zoek teamlid..."
+            autoFocus
+            className="bg-bg-2 rounded-lg h-8 w-full"
+          />
         </div>
 
         {/* Team member list */}

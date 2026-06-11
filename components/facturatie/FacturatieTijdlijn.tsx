@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { toast } from 'sonner'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import {
   Dialog,
   DialogContent,
@@ -14,10 +13,14 @@ import {
   DialogFooter,
 } from '@/components/ui/Dialog'
 import { cn } from '@/lib/utils'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { SearchInput } from '@/components/ui/SearchInput'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { toggleInvoiceRecord, cycleFactuurStatus } from '@/app/(app)/timeline/actions'
 import type { KlantBilling, ComputedInvoice, FactuurStatus } from '@/types/factuur'
-import { FACTUUR_STATUS_NEXT, FACTUUR_STATUS_CONFIG } from '@/types/factuur'
+import { FACTUUR_STATUS_NEXT } from '@/types/factuur'
+import { formatEur } from '@/lib/format'
+import { FactuurStatusBadge } from './FactuurStatusBadge'
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
 const LEFT_W = 240   // px – sticky client label column
@@ -207,7 +210,7 @@ function MobileRow({ inv, klant, today, onToggle }: {
       </div>
       <span className="text-xs text-muted-foreground shrink-0">{dateLabel}</span>
       <span className="text-xs font-medium text-foreground shrink-0">
-        € {inv.amount.toLocaleString('nl-NL')},-
+        {formatEur(inv.amount)}
       </span>
       {klant.type === 'recurring' && isPast && (
         <button
@@ -439,10 +442,6 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
 
   const totalW = LEFT_W + totalWeeks * WEEK_W
 
-  function formatEur(n: number) {
-    return '€ ' + n.toLocaleString('nl-NL') + ',-'
-  }
-
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -453,18 +452,11 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
         iconName="chart-gantt"
         actions={
           <>
-            <div className="relative flex items-center">
-              <span className="absolute left-2 text-muted-foreground pointer-events-none">
-                <SvgIcon name="magnifying-glass" size={13} />
-              </span>
-              <Input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Zoek een klant"
-                className="h-[26px] w-[200px] rounded-full bg-bg-0 pl-7 pr-3 text-xs"
-              />
-            </div>
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Zoek een klant"
+            />
             <Button size="sm">
               <SvgIcon name="user-plus" size={14} />
               Klant toevoegen
@@ -481,39 +473,24 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
             </div>
 
             <div className="ml-auto flex items-center gap-2">
-              <div className="flex items-center gap-0.5 bg-bg-0 rounded-full p-0.5">
-                {(['all', 'actief', 'gepauzeerd'] as const).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setStatusFilter(f)}
-                    className={cn(
-                      'h-6 px-2.5 text-xs rounded-full transition-colors',
-                      statusFilter === f
-                        ? 'bg-secondary text-foreground'
-                        : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {f === 'all' ? 'Alle' : f === 'actief' ? 'Actief' : 'Gepauzeerd'}
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                options={[
+                  { value: 'all', label: 'Alle' },
+                  { value: 'actief', label: 'Actief' },
+                  { value: 'gepauzeerd', label: 'Gepauzeerd' },
+                ]}
+                value={statusFilter}
+                onChange={setStatusFilter}
+              />
 
-              <div className="flex items-center gap-0.5 bg-bg-0 rounded-full p-0.5">
-                {([26, 52] as const).map((h) => (
-                  <button
-                    key={h}
-                    onClick={() => setHorizon(h)}
-                    className={cn(
-                      'h-6 px-2.5 text-xs rounded-full transition-colors',
-                      horizon === h
-                        ? 'bg-secondary text-foreground'
-                        : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {h}w
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl
+                options={[
+                  { value: '26', label: '26w' },
+                  { value: '52', label: '52w' },
+                ]}
+                value={String(horizon) as '26' | '52'}
+                onChange={(v) => setHorizon(Number(v) as 26 | 52)}
+              />
 
               <Button variant="ghost" size="xs" onClick={scrollToToday} className="gap-1.5">
                 <SvgIcon name="calendar" size={12} />
@@ -827,7 +804,7 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
           </div>
           <p className="text-xs font-medium text-foreground">{formatEur(tooltip.amount)}</p>
           {tooltip.factuurStatus ? (
-            <StatusBadge status={tooltip.factuurStatus} />
+            <FactuurStatusBadge status={tooltip.factuurStatus} />
           ) : tooltip.invoiced ? (
             <p className="text-xs text-green-500 flex items-center gap-1">
               <SvgIcon name="check" size={11} />
@@ -884,12 +861,5 @@ function LegendPill({ color, bg, label }: { color: string; bg: string; label: st
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
       {label}
     </div>
-  )
-}
-
-function StatusBadge({ status }: { status: FactuurStatus }) {
-  const { label, color } = FACTUUR_STATUS_CONFIG[status]
-  return (
-    <span style={{ color }} className="text-xs font-medium">{label}</span>
   )
 }

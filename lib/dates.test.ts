@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addDays, toLocalDateStr, endOfMonth, toPct } from '@/lib/dates'
+import { addDays, toLocalDateStr, endOfMonth, toPct, fmtDate, isOverdue, parseDate } from '@/lib/dates'
 
 describe('addDays', () => {
   it('happy path: +5 days', () => {
@@ -46,6 +46,42 @@ describe('endOfMonth', () => {
     const result = endOfMonth(new Date(2026, 1, 10))
     expect(result.getDate()).toBe(28)
     expect(result.getMonth()).toBe(1)
+  })
+})
+
+describe('parseDate', () => {
+  it('keeps the calendar date for date-only strings (noon anchor)', () => {
+    const d = parseDate('2026-06-10')
+    expect(d.getDate()).toBe(10)
+    expect(d.getHours()).toBe(12)
+  })
+
+  it('parses full ISO timestamps as-is', () => {
+    expect(parseDate('2026-06-10T08:30:00Z').toISOString()).toBe('2026-06-10T08:30:00.000Z')
+  })
+})
+
+describe('fmtDate', () => {
+  it('formats date-only strings as short Dutch date', () => {
+    expect(fmtDate('2026-06-10')).toBe('10 jun')
+  })
+
+  it('accepts Intl options for longer formats', () => {
+    expect(fmtDate('2026-06-10', { day: 'numeric', month: 'short', year: 'numeric' })).toBe('10 jun 2026')
+  })
+})
+
+describe('isOverdue', () => {
+  it('yesterday is overdue', () => {
+    expect(isOverdue(addDays(toLocalDateStr(new Date()), -1))).toBe(true)
+  })
+
+  it('today is not overdue', () => {
+    expect(isOverdue(toLocalDateStr(new Date()))).toBe(false)
+  })
+
+  it('tomorrow is not overdue', () => {
+    expect(isOverdue(addDays(toLocalDateStr(new Date()), 1))).toBe(false)
   })
 })
 

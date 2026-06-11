@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo, useTransition } from 'react'
-import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
 import {
@@ -12,12 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/Select'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { SearchInput } from '@/components/ui/SearchInput'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { KanbanBoard } from '@/components/projecten/KanbanBoard'
+import { TakenLijst } from './TakenLijst'
 import { TaakDetailDrawer } from '@/components/projecten/TaakDetailDrawer'
 import { NieuweTaakDrawer } from '@/components/projecten/NieuweTaakDrawer'
 import type { Project, Task, TaskWithRelations, TaskStatus, TaskPriority } from '@/types/project'
-import { PRIORITY_CONFIG, KANBAN_COLUMNS } from '@/types/project'
+import { PRIORITY_CONFIG } from '@/types/project'
 import type { TeamMember } from '@/types/team'
 import { moveTask } from '@/app/(app)/projecten/actions'
 type View = 'kanban' | 'lijst'
@@ -28,9 +30,9 @@ interface TakenModuleProps {
   teamMembers: TeamMember[]
 }
 
-const VIEW_TABS: { id: View; label: string; icon: string }[] = [
-  { id: 'lijst',  label: 'Lijst',  icon: 'list-check' },
-  { id: 'kanban', label: 'Kanban', icon: 'chart-kanban' },
+const VIEW_TABS: { value: View; label: string; icon: string }[] = [
+  { value: 'lijst',  label: 'Lijst',  icon: 'list-check' },
+  { value: 'kanban', label: 'Kanban', icon: 'chart-kanban' },
 ]
 
 export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamMembers }: TakenModuleProps) {
@@ -109,18 +111,12 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
         icon={<SvgIcon name="list-check" size={16} className="text-fg-1 shrink-0" />}
         actions={
           <>
-            {/* Search pill */}
-            <div className="flex items-center gap-1.5 bg-bg-3 rounded-full px-3 h-7 w-[220px]">
-              <SvgIcon name="magnifying-glass" size={13} className="text-fg-3 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Zoek taak of project..."
-                aria-label="Zoek taak of project"
-                className="bg-transparent text-[12px] text-fg-1 placeholder:text-fg-3 outline-none flex-1 min-w-0"
-              />
-            </div>
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Zoek taak of project..."
+              ariaLabel="Zoek taak of project"
+            />
 
             <Button
               size="sm"
@@ -135,21 +131,7 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
         toolbar={
           <>
             <PageToolbar>
-              {/* View tabs pill */}
-              <div className="flex items-center p-0.5 rounded-full bg-bg-0">
-                {VIEW_TABS.map((tab) => (
-                  <Button
-                    key={tab.id}
-                    variant="ghost"
-                    size="xs"
-                    onClick={() => setView(tab.id)}
-                    className={cn('rounded-full gap-1.5', view === tab.id && 'bg-secondary text-foreground')}
-                  >
-                    <SvgIcon name={tab.icon} size={13} className="shrink-0" />
-                    {tab.label}
-                  </Button>
-                ))}
-              </div>
+              <SegmentedControl options={VIEW_TABS} value={view} onChange={setView} />
 
               {/* Filters button */}
               <Button
@@ -241,7 +223,7 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
         )}
 
         {view === 'lijst' && (
-          <LijstView tasks={filteredTasks} onTaskClick={openTaskDetail} />
+          <TakenLijst tasks={filteredTasks} onTaskClick={openTaskDetail} showProject />
         )}
       </div>
 
@@ -266,84 +248,3 @@ export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamM
   )
 }
 
-// ─── List view ────────────────────────────────────────────────────────────────
-
-function LijstView({
-  tasks,
-  onTaskClick,
-}: {
-  tasks: TaskWithRelations[]
-  onTaskClick: (task: TaskWithRelations) => void
-}) {
-  if (tasks.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-[13px] text-fg-3">
-        Geen taken gevonden.
-      </div>
-    )
-  }
-
-  return (
-    <div className="overflow-y-auto h-full px-6 py-4">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="text-left border-b border-border-subtle">
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-20">ID</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide">Titel</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-36">Project</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-24">Status</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-24">Prioriteit</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-24">Deadline</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((task) => {
-            const prio   = PRIORITY_CONFIG[task.prioriteit]
-            const status = KANBAN_COLUMNS.find((c) => c.status === task.status)
-            return (
-              <tr
-                key={task.id}
-                onClick={() => onTaskClick(task)}
-                className="border-b border-border-subtle/50 hover:bg-bg-2 cursor-pointer transition-colors"
-              >
-                <td className="py-2.5 pr-3 text-[11px] font-mono text-fg-3">FLT-{task.task_number}</td>
-                <td className="py-2.5 pr-3 text-[13px] text-fg-1 max-w-[280px] truncate">{task.titel}</td>
-                <td className="py-2.5 pr-3">
-                  {task.project && (
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: task.project.kleur }} />
-                      <span className="text-[12px] text-fg-2 truncate">{task.project.naam}</span>
-                    </div>
-                  )}
-                </td>
-                <td className="py-2.5 pr-3">
-                  {status && (
-                    <div className="flex items-center gap-1">
-                      <SvgIcon name={status.iconName} size={12} className={status.textClass} />
-                      <span className={cn('text-[11px]', status.textClass)}>{status.label}</span>
-                    </div>
-                  )}
-                </td>
-                <td className="py-2.5 pr-3">
-                  {task.prioriteit !== 'normaal' && (
-                    <span
-                      className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                      style={{ color: prio.color, background: prio.bg }}
-                    >
-                      {prio.label}
-                    </span>
-                  )}
-                </td>
-                <td className="py-2.5 text-[12px] text-fg-2">
-                  {task.deadline
-                    ? new Date(task.deadline + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
-                    : '—'}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}

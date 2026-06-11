@@ -13,8 +13,21 @@ export function toPct(dateStr: string, rangeStart: Date, totalMs: number): numbe
   return ((new Date(dateStr).getTime() - rangeStart.getTime()) / totalMs) * 100
 }
 
-export function fmtDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+/**
+ * Parse a date string safely: date-only strings ("2026-06-10") get a noon
+ * time so the calendar date never shifts, in any timezone. Full ISO
+ * timestamps parse as-is.
+ */
+export function parseDate(dateStr: string): Date {
+  return new Date(dateStr.length === 10 ? dateStr + 'T12:00:00' : dateStr)
+}
+
+export function fmtDate(dateStr: string, opts?: Intl.DateTimeFormatOptions): string {
+  return parseDate(dateStr).toLocaleDateString('nl-NL', opts ?? { day: 'numeric', month: 'short' })
+}
+
+export function isOverdue(dateStr: string): boolean {
+  return new Date(dateStr.slice(0, 10) + 'T23:59:59') < new Date()
 }
 
 export function toLocalDateStr(d: Date): string {

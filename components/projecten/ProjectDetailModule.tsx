@@ -4,7 +4,16 @@ import { useState, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
-import { Avatar } from '@/components/ui/Avatar'
+import { AvatarStack } from '@/components/ui/AvatarStack'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { StatusChip } from '@/components/ui/StatusChip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/DropdownMenu'
 import { Button } from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
 import {
@@ -16,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 import { KanbanBoard } from './KanbanBoard'
+import { TakenLijst } from '@/components/taken/TakenLijst'
 import { TaakDetailDrawer } from './TaakDetailDrawer'
 import { NieuweTaakDrawer } from './NieuweTaakDrawer'
 import { BijlageModal } from './BijlageModal'
@@ -30,9 +40,10 @@ import type {
   TaskPriority,
   ProjectStatus,
 } from '@/types/project'
-import { PRIORITY_CONFIG, PRIORITY_ICON, KANBAN_COLUMNS, PROJECT_COLUMNS } from '@/types/project'
+import { PRIORITY_CONFIG, PRIORITY_ICON, PROJECT_COLUMNS } from '@/types/project'
 import type { TeamMember } from '@/types/team'
 import { moveTask, updateProject, toggleFavorite } from '@/app/(app)/projecten/actions'
+import { fmtDate } from '@/lib/dates'
 import { DocumentIcon } from '@/components/projecten/DocumentIcon'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -44,13 +55,6 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'taken', label: 'Taken', icon: 'list-check-1' },
   { id: 'activiteit', label: 'Activiteit', icon: 'chart-gantt' },
 ]
-
-function fmtDate(dateStr: string): string {
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('nl-NL', {
-    day: 'numeric',
-    month: 'short',
-  })
-}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -74,7 +78,6 @@ export function ProjectDetailModule({
   const [nieuweTaakOpen, setNieuweTaakOpen] = useState(false)
   const [bijlageOpen, setBijlageOpen] = useState(false)
   const [assigneesOpen, setAssigneesOpen] = useState(false)
-  const [statusOpen, setStatusOpen] = useState(false)
   const [defaultTaskStatus, setDefaultTaskStatus] = useState<TaskStatus>('todo')
   const [taakKey, setTaakKey] = useState(0)
   const [, startTransition] = useTransition()
@@ -199,7 +202,6 @@ export function ProjectDetailModule({
   }
 
   function handleStatusChange(newStatus: ProjectStatus) {
-    setStatusOpen(false)
     if (newStatus === project.status) return
     setProject((p) => ({ ...p, status: newStatus }))
     startTransition(() => { updateProject(project.id, { status: newStatus }) })
@@ -365,43 +367,35 @@ export function ProjectDetailModule({
 
                 {/* Status — click to change */}
                 {statusCol && (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setStatusOpen((v) => !v)}
-                      className="flex items-center gap-1 rounded hover:bg-bg-3 px-1 py-0.5 -mx-1 transition-colors"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className="flex items-center gap-1 rounded hover:bg-bg-3 px-1 py-0.5 -mx-1 transition-colors outline-none"
                       title="Status wijzigen"
                     >
-                      <SvgIcon name={statusCol.iconName} size={13} className={statusCol.textClass} />
-                      <span className="text-[12px] text-fg-2">{statusCol.label}</span>
-                    </button>
-                    {statusOpen && (
-                      <>
-                        <button
-                          type="button"
-                          aria-label="Sluit statusmenu"
-                          className="fixed inset-0 z-10 cursor-default"
-                          onClick={() => setStatusOpen(false)}
-                        />
-                        <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg py-1 min-w-[160px]">
-                          {PROJECT_COLUMNS.map((col) => (
-                            <button
-                              key={col.status}
-                              type="button"
-                              onClick={() => handleStatusChange(col.status)}
-                              className={cn(
-                                'w-full text-left flex items-center gap-2 px-3 py-1.5 text-[12px] hover:bg-bg-3 transition-colors',
-                                project.status === col.status ? 'text-fg-1 font-medium' : 'text-fg-2',
-                              )}
-                            >
-                              <SvgIcon name={col.iconName} size={13} className={col.textClass} />
-                              {col.label}
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                      <StatusChip
+                        iconName={statusCol.iconName}
+                        label={statusCol.label}
+                        textClass={statusCol.textClass}
+                        iconSize={13}
+                        labelClass="text-[12px] text-fg-2"
+                      />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="min-w-[160px]">
+                      {PROJECT_COLUMNS.map((col) => (
+                        <DropdownMenuItem
+                          key={col.status}
+                          onSelect={() => handleStatusChange(col.status)}
+                          className={cn(
+                            'text-[12px]',
+                            project.status === col.status ? 'text-fg-1 font-medium' : 'text-fg-2',
+                          )}
+                        >
+                          <SvgIcon name={col.iconName} size={13} className={col.textClass} />
+                          {col.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
 
                 {/* Assignees — click to manage */}
@@ -413,17 +407,17 @@ export function ProjectDetailModule({
                 >
                   {project.assignees.length > 0 ? (
                     <>
-                      <div className="flex items-center">
-                        {project.assignees.slice(0, 3).map((a, i) => (
-                          <Avatar
-                            key={a.profile_id}
-                            src={a.profiles?.avatar_url}
-                            name={a.profiles?.full_name ?? undefined}
-                            size={18}
-                            className={cn(i > 0 && '-ml-1 ring-1 ring-bg-1')}
-                          />
-                        ))}
-                      </div>
+                      <AvatarStack
+                        people={project.assignees.map((a) => ({
+                          key: a.profile_id,
+                          src: a.profiles?.avatar_url,
+                          name: a.profiles?.full_name ?? undefined,
+                        }))}
+                        size={18}
+                        overlap={4}
+                        ringClass="ring-bg-1"
+                        showOverflow={false}
+                      />
                       <span className="text-[12px] text-fg-2">
                         {project.assignees
                           .slice(0, 2)
@@ -563,17 +557,12 @@ export function ProjectDetailModule({
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
             {/* Filters toolbar */}
             <div className="flex items-center gap-3 px-4 py-2 border-b border-border-subtle shrink-0">
-              <div className="flex items-center gap-1.5 bg-bg-3 rounded-full px-3 h-7 w-[220px]">
-                <SvgIcon name="magnifying-glass" size={13} className="text-fg-3 shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Zoek taak..."
-                  aria-label="Zoek taak in project"
-                  className="bg-transparent text-[12px] text-fg-1 placeholder:text-fg-3 outline-none flex-1 min-w-0"
-                />
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Zoek taak..."
+                ariaLabel="Zoek taak in project"
+              />
 
               <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v ?? 'all')}>
                 <SelectTrigger size="sm" className="text-[12px]" aria-label="Filter op prioriteit">
@@ -595,18 +584,13 @@ export function ProjectDetailModule({
             </div>
 
             {/* Task list table */}
-            <TakenLijstView tasks={filteredTasks} onTaskClick={openTaskDetail} />
+            <TakenLijst tasks={filteredTasks} onTaskClick={openTaskDetail} />
           </div>
         )}
 
         {/* ── Activiteit tab ── */}
         {tab === 'activiteit' && (
-          <div className="flex items-center justify-center h-full text-center">
-            <div className="flex flex-col items-center gap-2">
-              <SvgIcon name="chart-gantt" size={28} className="text-fg-disabled" />
-              <span className="text-[13px] text-fg-3">Activiteitenfeed komt binnenkort.</span>
-            </div>
-          </div>
+          <EmptyState icon="chart-gantt" title="Activiteitenfeed komt binnenkort." />
         )}
       </div>
 
@@ -649,75 +633,3 @@ export function ProjectDetailModule({
   )
 }
 
-// ─── Taken lijst view ────────────────────────────────────────────────────────
-
-function TakenLijstView({
-  tasks,
-  onTaskClick,
-}: {
-  tasks: TaskWithRelations[]
-  onTaskClick: (task: TaskWithRelations) => void
-}) {
-  if (tasks.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-[13px] text-fg-3">
-        Geen taken gevonden.
-      </div>
-    )
-  }
-
-  return (
-    <div className="overflow-y-auto h-full px-6 py-4">
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="text-left border-b border-border-subtle">
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-20">ID</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide">Titel</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-24">Status</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-24">Prioriteit</th>
-            <th className="pb-2 text-[11px] text-fg-3 font-medium uppercase tracking-wide w-24">Deadline</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((task) => {
-            const prio = PRIORITY_CONFIG[task.prioriteit]
-            const status = KANBAN_COLUMNS.find((c) => c.status === task.status)
-            return (
-              <tr
-                key={task.id}
-                onClick={() => onTaskClick(task)}
-                className="border-b border-border-subtle/50 hover:bg-bg-2 cursor-pointer transition-colors"
-              >
-                <td className="py-2.5 pr-3 text-[11px] font-mono text-fg-3">FLT-{task.task_number}</td>
-                <td className="py-2.5 pr-3 text-[13px] text-fg-1 max-w-[300px] truncate">{task.titel}</td>
-                <td className="py-2.5 pr-3">
-                  {status && (
-                    <div className="flex items-center gap-1">
-                      <SvgIcon name={status.iconName} size={12} className={status.textClass} />
-                      <span className={cn('text-[11px]', status.textClass)}>{status.label}</span>
-                    </div>
-                  )}
-                </td>
-                <td className="py-2.5 pr-3">
-                  {task.prioriteit !== 'normaal' && (
-                    <span
-                      className="text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                      style={{ color: prio.color, background: prio.bg }}
-                    >
-                      {prio.label}
-                    </span>
-                  )}
-                </td>
-                <td className="py-2.5 text-[12px] text-fg-2">
-                  {task.deadline
-                    ? new Date(task.deadline + 'T12:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
-                    : '—'}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}

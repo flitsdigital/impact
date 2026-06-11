@@ -1,5 +1,232 @@
 # Component Audit — Flits CRM
 
+# Ronde 2 — 2026-06-11: duplicaat-componenten & gemiste atomen
+
+_58 componentbestanden gescand (structurele scan + handmatige verificatie van elke vondst). Ronde 1 (onderaan dit document) dekte input/textarea-primitieven en is geïmplementeerd; deze ronde kijkt naar component-niveau duplicatie — hetzelfde UI-element dat meerdere keren opnieuw is gebouwd._
+
+## Samenvatting
+
+- **6 duplicaat-clusters** (componenten die 2–5× opnieuw gebouwd zijn)
+- **8 gemiste-hergebruik-patronen** (inline herimplementaties en ontbrekende ui-atomen)
+- Het grootste probleem is niet één component maar een patroon: feature-modules (`ProjectenModule`, `TakenModule`, `ContentModule`, `KlantenTable`, `FacturatieTijdlijn`) bouwen elk hun eigen toolbar-elementen, badges, tabellen en kaart-onderdelen in plaats van gedeelde atomen te gebruiken. De fix is een handvol kleine componenten in `components/ui/` + 2 utils in `lib/`, daarna call-sites vervangen.
+
+---
+
+## 1. Duplicaat-componenten
+
+### 1.1 View switcher / segmented control — 5× gebouwd, 2 visuele stijlen ⭐ hoogste prioriteit
+
+Er bestaan **vijf** implementaties van hetzelfde pill-switcher concept, in **twee verschillende stijlen**:
+
+| Bestand | Regels | Implementatie |
+|---|---|---|
+| `components/projecten/ProjectenModule.tsx` | 115–127 | rauwe `<button>`, géén `bg-bg-0` container |
+| `components/taken/TakenModule.tsx` | 139–152 | `<Button variant="ghost" size="xs">` in `p-0.5 rounded-full bg-bg-0` |
+| `components/content/ContentModule.tsx` | 698–711 | idem als Taken |
+| `components/klanten/KlantenTable.tsx` | 154–171 én 174–191 (type-filter) | idem als Taken |
+| `components/facturatie/FacturatieTijdlijn.tsx` | 484–494 (status-filter) | rauwe `<button>`, wéér andere classes |
+
+Dit verklaart het zichtbare verschil tussen de Projecten-switcher (rauwe buttons, geen donkere container) en de Taken-switcher.
+
+**Voorstel:** één component `components/ui/SegmentedControl.tsx`:
+
+```tsx
+interface SegmentedControlProps<T extends string> {
+  options: { value: T; label: string; icon?: string }[]
+  value: T
+  onChange: (value: T) => void
+}
+```
+
+Rendert de `p-0.5 rounded-full bg-bg-0`-container met `Button variant="ghost" size="xs"` per optie (de Taken/Content-stijl als canoniek). Vervangt 5 call-sites, inclusief de type-filter in KlantenTable en de status-filter in FacturatieTijdlijn — zelfde patroon zonder iconen.
+
+**Effort:** klein (±1 uur). **Risico:** laag; ProjectenModule krijgt de canonieke stijl en gaat er dus iets anders uitzien — dat is juist de bedoeling.
+
+---
+
+### 1.2 `TypeBadge` + `StatusBadge` — letterlijk gekopieerd
+
+`components/klanten/KlantDetailModule.tsx:42` bevat zelfs het commentaar *"Chips (copied from KlantenTable.tsx)"*.
+
+- `KlantenTable.tsx:24–62` ↔ `KlantDetailModule.tsx:44–82` — byte-voor-byte identiek.
+
+**Voorstel:** verplaats beide naar `components/klanten/KlantBadges.tsx`, importeer op beide plekken. Puur verplaatsen, nul risico.
+
+---
+
+### 1.3 Klant-formulier — `KlantToevoegenModal` ↔ `EditDialog` (95% identiek)
+
+De scanner mat 95,5% structurele overlap tussen `components/klanten/KlantToevoegenModal.tsx` en de interne `EditDialog` in `KlantDetailModule.tsx:120–277`. Beide bouwen hetzelfde Dialog + formulier (naam, type, contactpersoon, email/telefoon-grid, …). Verschillen: EditDialog heeft extra status/website/notities-velden en `defaultValue`s; de toevoegen-variant heeft een DatePicker voor "volgende factuur" en gebruikt `useActionState` i.p.v. `useTransition`.
+
+**Voorstel:** extraheer `KlantFormFields` (de gedeelde veldenset, met `defaults?: Klant`) en laat beide dialogs die renderen. De submit-logica mag per dialog verschillen. Nieuw veld toevoegen = nu 2 plekken aanpassen, straks 1.
+
+**Effort:** middel. **Risico:** laag.
+
+---
+
+### 1.4 Taken-lijsttabel — 2× vrijwel identiek
+
+- `TakenModule.tsx:271–349` (`LijstView`)
+- `ProjectDetailModule.tsx:654–723` (`TakenLijstView`)
+
+Zelfde `<table>`, zelfde header-classes, zelfde rij-rendering (FLT-nummer, titel, status-chip, prioriteit-pill, deadline). Enige verschil: TakenModule heeft een extra Project-kolom.
+
+**Voorstel:** één `components/taken/TakenLijst.tsx` met prop `showProject?: boolean` — exact zoals `TaakKaart` dat al netjes doet. Verwijdert ~75 regels duplicaat.
+
+---
+
+### 1.5 `FactuurStatusBadge` — 2 implementaties van hetzelfde concept
+
+- `KlantDetailModule.tsx:99–109` — pill met `${cfg.color}22` achtergrond
+- `FacturatieTijdlijn.tsx:890–895` — alleen gekleurde tekst
+
+Beide lezen `FACTUUR_STATUS_CONFIG`. Twee verschillende renderingen van dezelfde status is vermoedelijk onbedoeld.
+
+**Voorstel:** één `FactuurStatusBadge` in `components/facturatie/` met evt. een `variant`-prop; kies bewust één visuele stijl.
+
+---
+
+### 1.6 `TaakKaart` ↔ `ProjectKaart` — zelfde bouwstenen, apart gebouwd
+
+`components/projecten/TaakKaart.tsx` en `ProjectKaart.tsx` zijn semantisch verschillende kaarten (terecht apart), maar herbouwen elk dezelfde onderdelen:
+
+- identieke lokale helpers `fmtDate` + `isOverdue` (regels 9–18 in beide)
+- identieke avatar-stack met `+N`-overflow (regels 57–74 in beide)
+- identieke prioriteit-indicator (icoon + label)
+- identieke progress-bar incl. dezelfde hardcoded kleurlogica (`#46A557` / `#0072F5` / `#FFB223`)
+- identieke footer (count + deadline met overdue-kleur)
+
+**Voorstel:** niet de kaarten mergen, maar de bouwstenen delen — zie 2.1 (AvatarStack), 2.3 (date-utils) en eventueel een kleine `ProgressBar` + `KaartFooter`. Daarna zijn beide kaarten ~40% korter.
+
+---
+
+## 2. Gemist hergebruik — inline herimplementaties
+
+### 2.1 AvatarStack — 5× inline gebouwd
+
+`assignees.slice(0, 3).map(...)` + `+{n − 3}`-overflow-bolletje staat in:
+
+- `TaakKaart.tsx:57–74`
+- `ProjectKaart.tsx:57–74`
+- `ContentModule.tsx:221–237` (PostCard)
+- `ProjectDetailModule.tsx:416–426`
+- `NieuwePostDrawer.tsx`
+
+Elk met nét andere maten (14/18/20px) en ring-kleuren — dat zijn props, geen redenen voor copy-paste.
+
+**Voorstel:** `components/ui/AvatarStack.tsx`:
+
+```tsx
+<AvatarStack people={assignees.map(a => ({ src, name }))} size={14} max={3} ringClass="ring-bg-2" />
+```
+
+---
+
+### 2.2 Search-pill — 6× inline gebouwd, 2 stijlen
+
+| Bestand | Regels | Stijl |
+|---|---|---|
+| `ProjectenModule.tsx` | 92–102 | `bg-bg-3` pill + rauwe `<input>` |
+| `TakenModule.tsx` | 113–123 | idem |
+| `ProjectDetailModule.tsx` | 566–576 | idem |
+| `AssigneesModal.tsx` | 108–115 | idem |
+| `KlantenTable.tsx` | 137–145 | `<Input>` met absolute icon, `bg-secondary` |
+| `FacturatieTijdlijn.tsx` | 456–467 | `<Input>` met absolute icon, `bg-bg-0` |
+
+Twee visuele dialecten van hetzelfde ding. (Ronde 1 signaleerde dit ook al als follow-up.)
+
+**Voorstel:** `components/ui/SearchInput.tsx` met props `value`, `onChange`, `placeholder`, `className`. Kies één stijl (de pill-variant lijkt de huisstijl).
+
+---
+
+### 2.3 Datum-formattering — 4 lokale `fmtDate`-helpers + 9 bestanden met losse `toLocaleDateString('nl-NL', …)`
+
+Identieke `fmtDate` staat lokaal in `TaakKaart.tsx`, `ProjectKaart.tsx`, `ProjectDetailModule.tsx:48–53`; daarnaast inline date-calls in `TakenModule`, `ContentModule` (2×), `KlantDetailModule` (2×), `KlantenTable`, `NieuwProjectDrawer`, `FacturatieTijdlijn`. Ook `isOverdue` is 2× gedupliceerd, en de `+ 'T12:00:00'`-timezone-truc is op elke plek herhaald (in `ContentModule.tsx:196` staat per ongeluk `'T00:00:00'` — precies het soort drift dat duplicatie veroorzaakt).
+
+**Voorstel:** `lib/dates.ts` met `fmtDate(dateStr)`, `fmtDateLong(dateStr)`, `isOverdue(dateStr)`. Eén plek voor de timezone-afhandeling.
+
+---
+
+### 2.4 Euro-formattering — 3 varianten
+
+- `FacturatieTijdlijn.tsx:443` — `'€ ' + n.toLocaleString('nl-NL') + ',-'`
+- `FacturatieTijdlijn.tsx:210` — zelfde patroon nóg een keer inline (gebruikt de eigen helper niet eens)
+- `KlantDetailModule.tsx:468–471` — `Intl.NumberFormat('nl-NL', { style: 'currency' })`
+
+Drie plekken, twee output-formaten (`€ 1.250,-` vs `€ 1.250,00`).
+
+**Voorstel:** `formatEur()` in `lib/format.ts`; kies één weergave.
+
+---
+
+### 2.5 Status-chip (icoon + gekleurd label uit config) — ±6× inline
+
+Het patroon `<SvgIcon name={cfg.iconName} className={cfg.textClass} /> <span className={cfg.textClass}>{cfg.label}</span>` op basis van `KANBAN_COLUMNS` / `PROJECT_COLUMNS` / `STATUS_CONFIG` staat in:
+
+- `TakenModule.tsx:320–325` (lijst-rij)
+- `ProjectDetailModule.tsx:375–376` (status-knop) en `696–698` (lijst-rij)
+- `KlantDetailModule.tsx:86–95` (`ProjectStatusBadge`)
+- `ContentModule.tsx:139–142` (`StatusIcon`, halve variant) en `508–509`
+
+**Voorstel:** `components/ui/StatusChip.tsx` die `{ iconName, label, textClass }` accepteert — werkt voor taken, projecten én content-posts omdat alle configs al dezelfde vorm hebben.
+
+---
+
+### 2.6 Handgerolde dropdown terwijl `ui/DropdownMenu` bestaat
+
+`ProjectDetailModule.tsx:368–405`: het status-wijzig-menu is met de hand gebouwd (fixed click-away overlay + absolute gepositioneerd paneel + eigen `statusOpen`-state), terwijl `components/ui/DropdownMenu.tsx` precies dit doet — inclusief keyboard-navigatie en a11y die de handgerolde versie mist. (Ronde 1 markeerde deze als "dropdown trigger, laten staan" — maar het hele *menu* eromheen is handwerk, niet alleen de trigger.)
+
+**Voorstel:** vervang door `DropdownMenu` met `StatusChip`-items (2.5).
+
+---
+
+### 2.7 Rauwe `<button>` waar `ui/Button` past
+
+Grootste gevallen:
+
+- `NieuwProjectDrawer.tsx` — 8 rauwe buttons
+- `ContentModule.tsx` — 3 (o.a. de "+"-hover-knop in MaandView, "Nieuwe post"-dashed-knop in WeekView)
+- `ProjectenModule.tsx` — de view-switcher (zie 1.1)
+- `FacturatieTijdlijn.tsx` — status-filter (zie 1.1)
+- losse gevallen in `AssigneesModal`, `KlantDetailModule`, `app/(app)/layout.tsx`
+
+Niet elke rauwe button is fout (tab-knoppen met `border-b-2`-stijl vallen buiten `Button` — zie ronde 1), maar de meeste zijn gewoon `variant="ghost"`-gevallen.
+
+**Voorstel:** opportunistisch meenemen per bestand; geen aparte sprint waard, behalve de gevallen die al onder 1.1 vallen.
+
+---
+
+### 2.8 Empty states — 5× ad hoc
+
+- `ProjectenModule.tsx:134–148` — icoon + titel + subtekst + CTA (de mooiste)
+- `TakenModule.tsx:280–283` — alleen een regel tekst
+- `ProjectDetailModule.tsx:604–609` — icoon + tekst
+- `ContentModule.tsx:478–482` — alleen tekst
+- `KlantenTable.tsx:248–253` — tabelrij met tekst
+
+**Voorstel:** `components/ui/EmptyState.tsx` met `icon`, `title`, `description?`, `action?`. Maakt lege schermen consistent (nu krijgt Projecten een nette CTA en Taken een kale regel).
+
+---
+
+## 3. Overig (bewust géén merge-advies)
+
+- **Twee `KanbanBoard`-bestanden** — `components/ui/KanbanBoard.tsx` (generiek) en `components/projecten/KanbanBoard.tsx` (dunne taak-adapter). Dit is juist een **goed** patroon, maar de identieke naam is verwarrend. Suggestie: hernoem de adapter naar `TaakKanban.tsx`.
+- **`PageHeader`/`PageToolbar`** worden al overal netjes hergebruikt 👍 — alleen `ProjectDetailModule` bouwt z'n eigen breadcrumb-header (regels 218–305); prima, dat is echt een ander ding.
+
+## Aanbevolen volgorde (ronde 2)
+
+1. **`SegmentedControl`** (1.1) — kleinste effort, grootste zichtbare consistentiewinst, 5 call-sites.
+2. **`lib/dates.ts` + `lib/format.ts`** (2.3, 2.4) — triviaal, raakt 10+ bestanden, fixt ook de `T00:00:00`-inconsistentie en de twee euro-formaten.
+3. **`AvatarStack` + `SearchInput` + `StatusChip`** (2.1, 2.2, 2.5) — drie kleine ui-atomen, samen ±150 regels duplicaat weg.
+4. **Klant-badges verplaatsen** (1.2) — 5 minuten, verwijdert de "copied from"-schande.
+5. **`TakenLijst` samenvoegen** (1.4) en **klant-formulier delen** (1.3).
+6. **DropdownMenu in ProjectDetailModule** (2.6) — ook een a11y-verbetering.
+7. Rauwe buttons en empty states (2.7, 2.8) — opportunistisch meenemen.
+
+---
+
+# Ronde 1 — 2026-06-01: form-primitieven (geïmplementeerd ✅)
+
 _Scanned 51 component files in `components/` and `app/` on 2026-06-01. Thresholds: duplicates ≥ 0.85, inline ≥ 0.80._
 
 ## Summary

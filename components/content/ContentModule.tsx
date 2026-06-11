@@ -5,8 +5,11 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Checkbox } from '@/components/ui/Checkbox'
 import { SvgIcon } from '@/components/ui/SvgIcon'
-import { Avatar } from '@/components/ui/Avatar'
+import { AvatarStack } from '@/components/ui/AvatarStack'
 import { KanbanBoard } from '@/components/ui/KanbanBoard'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { StatusChip } from '@/components/ui/StatusChip'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { cn } from '@/lib/utils'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { NieuwePostDrawer } from './NieuwePostDrawer'
@@ -15,6 +18,7 @@ import type { Post, PostStatus, PostType } from '@/types/post'
 import { STATUS_ICON, STATUS_LABEL, STATUS_ORDER } from '@/types/post'
 import type { Klant } from '@/types/klant'
 import type { TeamMember } from '@/types/team'
+import { fmtDate, parseDate } from '@/lib/dates'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,10 +42,10 @@ const TYPE_CONFIG: Record<PostType, { label: string; iconName: string }> = {
 }
 
 const VIEWS = [
-  { key: 'maand' as const, label: 'Maand', iconName: 'calendar' },
-  { key: 'week' as const, label: 'Week', iconName: 'layout-columns' },
-  { key: 'lijst' as const, label: 'Lijst', iconName: 'list-check' },
-  { key: 'kanban' as const, label: 'Kanban', iconName: 'chart-kanban' },
+  { value: 'maand' as const, label: 'Maand', icon: 'calendar' },
+  { value: 'week' as const, label: 'Week', icon: 'layout-columns' },
+  { value: 'lijst' as const, label: 'Lijst', icon: 'list-check' },
+  { value: 'kanban' as const, label: 'Kanban', icon: 'chart-kanban' },
 ]
 
 type View = 'maand' | 'week' | 'lijst' | 'kanban'
@@ -192,9 +196,7 @@ interface PostCardProps {
 }
 
 function PostCard({ post, isDragging = false, onDragStart, onDragEnd, onClick }: PostCardProps) {
-  const dateLabel = post.scheduled_at
-    ? new Date(post.scheduled_at + 'T00:00:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
-    : null
+  const dateLabel = post.scheduled_at ? fmtDate(post.scheduled_at) : null
   const assignees = post.assignees ?? []
 
   return (
@@ -219,22 +221,11 @@ function PostCard({ post, isDragging = false, onDragStart, onDragEnd, onClick }:
         </span>
 
         {assignees.length > 0 ? (
-          <div className="flex items-center shrink-0">
-            {assignees.slice(0, 3).map((a, i) => (
-              <Avatar
-                key={a.id}
-                src={a.avatar_url}
-                name={a.full_name ?? undefined}
-                size={20}
-                className={cn(i > 0 && '-ml-1.5 ring-1 ring-bg-2')}
-              />
-            ))}
-            {assignees.length > 3 && (
-              <span className="-ml-1.5 size-5 rounded-full bg-muted text-[9px] flex items-center justify-center text-muted-foreground ring-1 ring-bg-2">
-                +{assignees.length - 3}
-              </span>
-            )}
-          </div>
+          <AvatarStack
+            people={assignees.map((a) => ({ key: a.id, src: a.avatar_url, name: a.full_name ?? undefined }))}
+            size={20}
+            overlap={6}
+          />
         ) : (
           dateLabel && <span className="text-xs text-muted-foreground">{dateLabel}</span>
         )}
@@ -462,7 +453,7 @@ function LijstView({ posts, onAdd, onEdit }: {
   const weeks = new Map<string, { label: string; date: Date; posts: Post[] }>()
 
   for (const p of posts) {
-    const d = p.scheduled_at ? new Date(p.scheduled_at + 'T00:00:00') : new Date()
+    const d = p.scheduled_at ? parseDate(p.scheduled_at) : new Date()
     const mon = getMonday(d)
     const key = toDateKey(mon)
     if (!weeks.has(key)) {
@@ -475,11 +466,7 @@ function LijstView({ posts, onAdd, onEdit }: {
   const sortedWeeks = Array.from(weeks.entries()).sort(([a], [b]) => a.localeCompare(b))
 
   if (sortedWeeks.length === 0) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
-        Geen posts gevonden.
-      </div>
-    )
+    return <EmptyState icon="layers" title="Geen posts gevonden." className="flex-1" />
   }
 
   return (
@@ -505,8 +492,12 @@ function LijstView({ posts, onAdd, onEdit }: {
                   }}
                   className="w-full flex items-center gap-2 px-8 py-2 hover:bg-muted/30 transition-colors text-left"
                 >
-                  <SvgIcon name={cfg.iconName} size={12} className={cfg.textClass} />
-                  <span className={cn('text-xs font-medium', cfg.textClass)}>{cfg.label}</span>
+                  <StatusChip
+                    iconName={cfg.iconName}
+                    label={cfg.label}
+                    textClass={cfg.textClass}
+                    className="gap-2 text-xs font-medium"
+                  />
                   <Badge variant="secondary" className="text-xs h-4 px-1.5 rounded-full">{groupPosts.length}</Badge>
                   <SvgIcon
                     name="chevron-right"
@@ -695,20 +686,7 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
         toolbar={
           <>
             <PageToolbar>
-              <div className="flex items-center p-0.5 rounded-full bg-bg-0">
-                {VIEWS.map(({ key, label, iconName }) => (
-                  <Button
-                    key={key}
-                    variant="ghost"
-                    size="xs"
-                    onClick={() => setView(key)}
-                    className={cn('rounded-full gap-1.5', view === key && 'bg-secondary text-foreground')}
-                  >
-                    <SvgIcon name={iconName} size={12} />
-                    {label}
-                  </Button>
-                ))}
-              </div>
+              <SegmentedControl options={VIEWS} value={view} onChange={setView} />
 
               <div className="ml-auto">
                 <Button variant="ghost" size="xs" className="gap-1.5">

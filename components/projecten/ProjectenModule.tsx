@@ -5,6 +5,9 @@ import { useState, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
+import { SegmentedControl } from '@/components/ui/SegmentedControl'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { KanbanBoard as SharedKanbanBoard } from '@/components/ui/KanbanBoard'
 import { ProjectKaart } from './ProjectKaart'
@@ -13,13 +16,12 @@ import { NieuwProjectDrawer } from './NieuwProjectDrawer'
 import type { Project, Milestone, ProjectAssigneeProfile } from '@/types/project'
 import { PROJECT_COLUMNS } from '@/types/project'
 import { moveProject, updateProject } from '@/app/(app)/projecten/actions'
-import { cn } from '@/lib/utils'
 
 type View = 'kanban' | 'gantt'
 
-const VIEWS: { key: View; iconName: string; label: string }[] = [
-  { key: 'kanban', iconName: 'chart-kanban', label: 'Kanban' },
-  { key: 'gantt',  iconName: 'chart-gantt',  label: 'Gantt'  },
+const VIEWS: { value: View; icon: string; label: string }[] = [
+  { value: 'kanban', icon: 'chart-kanban', label: 'Kanban' },
+  { value: 'gantt',  icon: 'chart-gantt',  label: 'Gantt'  },
 ]
 
 interface ProjectenModuleProps {
@@ -89,17 +91,12 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
         icon={<SvgIcon name="chart-kanban" size={16} className="text-fg-1 shrink-0" />}
         actions={
           <>
-            <div className="flex items-center gap-1.5 bg-bg-3 rounded-full px-3 h-7 w-[220px]">
-              <SvgIcon name="magnifying-glass" size={13} className="text-fg-3 shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Zoek een project..."
-                aria-label="Zoek een project"
-                className="bg-transparent text-[12px] text-fg-1 placeholder:text-fg-3 outline-none flex-1 min-w-0"
-              />
-            </div>
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Zoek een project..."
+              ariaLabel="Zoek een project"
+            />
             <Button
               size="sm"
               onClick={() => { setProjectKey(k => k + 1); setNieuwProjectOpen(true) }}
@@ -112,40 +109,28 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
         }
         toolbar={
           <PageToolbar>
-            {VIEWS.map(v => (
-              <button
-                key={v.key}
-                onClick={() => setView(v.key)}
-                className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium transition-colors',
-                  view === v.key ? 'bg-bg-3 text-fg-1' : 'text-fg-3 hover:text-fg-2',
-                )}
-              >
-                <SvgIcon name={v.iconName} size={13} />
-                {v.label}
-              </button>
-            ))}
+            <SegmentedControl options={VIEWS} value={view} onChange={setView} />
           </PageToolbar>
         }
       />
 
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         {isEmpty ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <SvgIcon name={view === 'kanban' ? 'chart-kanban' : 'chart-gantt'} size={32} className="text-fg-disabled" />
-            <div className="flex flex-col gap-1">
-              <span className="text-[14px] font-medium text-fg-2">Nog geen projecten</span>
-              <span className="text-[12px] text-fg-3">Maak je eerste project aan om te beginnen.</span>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => { setProjectKey(k => k + 1); setNieuwProjectOpen(true) }}
-              className="gap-1.5 mt-2"
-            >
-              <SvgIcon name="file-plus" size={13} />
-              Nieuw project
-            </Button>
-          </div>
+          <EmptyState
+            icon={view === 'kanban' ? 'chart-kanban' : 'chart-gantt'}
+            title="Nog geen projecten"
+            description="Maak je eerste project aan om te beginnen."
+            action={
+              <Button
+                size="sm"
+                onClick={() => { setProjectKey(k => k + 1); setNieuwProjectOpen(true) }}
+                className="gap-1.5 mt-2"
+              >
+                <SvgIcon name="file-plus" size={13} />
+                Nieuw project
+              </Button>
+            }
+          />
         ) : view === 'kanban' ? (
           <SharedKanbanBoard
             columns={PROJECT_COLUMNS.map(c => ({ ...c, key: c.status }))}
