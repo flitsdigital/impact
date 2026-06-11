@@ -98,6 +98,14 @@ function EditDialog({
   )
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Laat een textarea meegroeien met de inhoud (Notion-achtig document). */
+function autoGrow(el: HTMLTextAreaElement) {
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight}px`
+}
+
 // ─── Contactmomenten-sidebar ──────────────────────────────────────────────────
 
 function todayStr(): string {
@@ -355,41 +363,12 @@ export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMo
 
         {/* Main content */}
         <div className="flex-1 min-w-0 overflow-y-auto">
-          <div className="w-full max-w-8/12 mx-auto px-8 pt-6 pb-4 flex flex-col gap-3">
+          <div className="w-full max-w-8/12 mx-auto min-h-full px-8 pt-6 pb-8 flex flex-col gap-3">
 
             {/* Title */}
             <h1 className="text-[28px] font-semibold text-fg-1 leading-tight">
               {lead.bedrijfsnaam}
             </h1>
-
-            {/* Beschrijving — klik om inline te bewerken */}
-            {editingNotities ? (
-              <textarea
-                ref={(el) => { el?.focus() }}
-                value={notitiesVal}
-                onChange={(e) => setNotitiesVal(e.target.value)}
-                onBlur={handleNotitiesSave}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    e.preventDefault()
-                    handleNotitiesCancel()
-                  }
-                }}
-                rows={3}
-                placeholder="Voeg een korte beschrijving toe..."
-                aria-label="Leadbeschrijving"
-                className="bg-transparent outline-none resize-none text-[13px] text-fg-1 placeholder:text-fg-3 w-full"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setEditingNotities(true)}
-                className="text-[13px] text-fg-3 text-left w-full whitespace-pre-wrap hover:text-fg-2 transition-colors"
-                title="Beschrijving bewerken"
-              >
-                {lead.notities || 'Voeg een korte beschrijving toe...'}
-              </button>
-            )}
 
             {/* ── Metadata row 1: status + bron + waarde ── */}
             <div className="flex items-center gap-4 flex-wrap">
@@ -485,6 +464,47 @@ export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMo
                 </button>
               )}
             </div>
+
+            <div className="h-px bg-border-subtle shrink-0 my-2" />
+
+            {/* ── Beschrijving — Notion-achtig document, vult de rest van de pagina ── */}
+            {editingNotities ? (
+              <textarea
+                ref={(el) => {
+                  if (!el) return
+                  el.focus()
+                  el.setSelectionRange(el.value.length, el.value.length)
+                  autoGrow(el)
+                }}
+                value={notitiesVal}
+                onChange={(e) => {
+                  setNotitiesVal(e.target.value)
+                  autoGrow(e.currentTarget)
+                }}
+                onBlur={handleNotitiesSave}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    handleNotitiesCancel()
+                  }
+                }}
+                placeholder="Schrijf een beschrijving, notities, of verzamel ideeën..."
+                aria-label="Leadbeschrijving"
+                className="flex-1 bg-transparent outline-none resize-none overflow-hidden text-[13px] leading-relaxed text-fg-1 placeholder:text-fg-3 w-full"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditingNotities(true)}
+                className={cn(
+                  'flex-1 text-[13px] leading-relaxed text-left w-full whitespace-pre-wrap transition-colors',
+                  lead.notities ? 'text-fg-1' : 'text-fg-3 hover:text-fg-2',
+                )}
+                title="Beschrijving bewerken"
+              >
+                {lead.notities || 'Schrijf een beschrijving, notities, of verzamel ideeën...'}
+              </button>
+            )}
           </div>
         </div>
 
