@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { DatePicker } from '@/components/ui/DatePicker'
 import {
   Select,
   SelectContent,
@@ -444,18 +444,20 @@ export function ProjectDetailModule({
                 {/* Date range — click to edit */}
                 {editingDate ? (
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="date"
+                    <DatePicker
                       value={startDateVal}
-                      onChange={(e) => setStartDateVal(e.target.value)}
-                      className="h-auto rounded bg-bg-2 px-2 py-0.5 text-[12px]"
+                      onChange={setStartDateVal}
+                      placeholder="Startdatum"
+                      clearable={false}
+                      className="h-7 w-auto text-[12px]"
                     />
                     <span className="text-[10px] text-fg-3">→</span>
-                    <Input
-                      type="date"
+                    <DatePicker
                       value={deadlineVal}
-                      onChange={(e) => setDeadlineVal(e.target.value)}
-                      className="h-auto rounded bg-bg-2 px-2 py-0.5 text-[12px]"
+                      onChange={setDeadlineVal}
+                      placeholder="Deadline"
+                      clearable={false}
+                      className="h-7 w-auto text-[12px]"
                     />
                     <Button
                       variant="ghost"

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/Dialog'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Label } from '@/components/ui/Label'
 import {
   Select,
@@ -104,7 +105,7 @@ export function KlantToevoegenModal({ open, onOpenChange }: Props) {
           {/* Volgende factuur */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="volgende_factuur">Volgende factuur</Label>
-            <Input id="volgende_factuur" name="volgende_factuur" type="date" />
+            <DatePicker id="volgende_factuur" name="volgende_factuur" placeholder="Kies datum" />
           </div>
 
           {state?.error && (

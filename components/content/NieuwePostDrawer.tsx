@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/AppDrawer'
 import { PillSelect } from '@/components/ui/PillSelect'
 import { Button }   from '@/components/ui/Button'
-import { Input }    from '@/components/ui/Input'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Textarea } from '@/components/ui/Textarea'
 import { Avatar }   from '@/components/ui/Avatar'
 import { SvgIcon }  from '@/components/ui/SvgIcon'
@@ -346,16 +346,12 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
             </PillSelect>
 
             {/* Datum */}
-            <div className="relative inline-flex items-center">
-              <span className="pointer-events-none absolute left-2 flex items-center text-muted-foreground">
-                <SvgIcon name="calendar" size={12} />
-              </span>
-              <Input
-                type="date" value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="h-7 cursor-pointer appearance-none rounded-full bg-secondary pl-6 pr-3 text-xs"
-              />
-            </div>
+            <DatePicker
+              variant="pill"
+              value={date}
+              onChange={setDate}
+              placeholder="Datum"
+            />
 
             {/* Teamleden */}
             <AssigneePicker teamleden={teamleden} value={assigneeIds} onChange={setAssigneeIds} />

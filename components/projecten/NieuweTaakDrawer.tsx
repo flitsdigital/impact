@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/Drawer'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Textarea } from '@/components/ui/Textarea'
 import {
   Select,
@@ -163,13 +164,11 @@ export function NieuweTaakDrawer({
           {/* Deadline */}
           <div className="flex flex-col gap-1.5">
             <label htmlFor="taak-deadline" className="text-[12px] text-fg-2">Deadline</label>
-            <Input
+            <DatePicker
               id="taak-deadline"
-              type="date"
               value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="h-auto rounded-lg bg-bg-2 px-3 py-2 text-[13px]"
-              data-vaul-no-drag
+              onChange={setDeadline}
+              placeholder="Kies deadline"
             />
           </div>
 

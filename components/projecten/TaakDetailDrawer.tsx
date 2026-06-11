@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/AppDrawer'
 import { PillSelect } from '@/components/ui/PillSelect'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
+import { DatePicker } from '@/components/ui/DatePicker'
 import { Textarea } from '@/components/ui/Textarea'
 import { cn } from '@/lib/utils'
 import type { TaskWithRelations, TaskStatus, TaskPriority } from '@/types/project'
@@ -120,18 +120,12 @@ export function TaakDetailDrawer({ task, open, onOpenChange, onDelete }: TaakDet
           ))}
         </PillSelect>
 
-        <div className="relative inline-flex items-center">
-          <span className="pointer-events-none absolute left-2 flex items-center text-muted-foreground">
-            <SvgIcon name="calendar" size={12} />
-          </span>
-          <Input
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            className="h-7 cursor-pointer appearance-none rounded-full bg-secondary pl-6 pr-3 text-xs"
-            data-vaul-no-drag
-          />
-        </div>
+        <DatePicker
+          variant="pill"
+          value={deadline}
+          onChange={setDeadline}
+          placeholder="Deadline"
+        />
       </AppDrawerMeta>
 
       {/* Body */}
