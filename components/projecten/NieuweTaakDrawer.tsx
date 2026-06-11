@@ -1,28 +1,23 @@
 'use client'
 
 import { useState } from 'react'
+import { DrawerClose } from '@/components/ui/Drawer'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerClose,
-  DrawerTitle,
-} from '@/components/ui/Drawer'
+  AppDrawer,
+  AppDrawerHeader,
+  AppDrawerMeta,
+  AppDrawerBody,
+  AppDrawerFooter,
+} from '@/components/ui/AppDrawer'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Textarea } from '@/components/ui/Textarea'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/Select'
-import type { Project, Task, TaskStatus, TaskPriority } from '@/types/project'
-import { PRIORITY_CONFIG, KANBAN_COLUMNS } from '@/types/project'
-import { createTask } from '@/app/(app)/projecten/actions'
+import { PillSelect } from '@/components/ui/PillSelect'
 import { SvgIcon } from '@/components/ui/SvgIcon'
+import type { Project, Task, TaskStatus, TaskPriority } from '@/types/project'
+import { PRIORITY_CONFIG, PRIORITY_ICON, KANBAN_COLUMNS } from '@/types/project'
+import { createTask } from '@/app/(app)/projecten/actions'
+
 interface NieuweTaakDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -48,6 +43,8 @@ export function NieuweTaakDrawer({
   const [deadline, setDeadline] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const statusCol = KANBAN_COLUMNS.find((c) => c.status === status)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -78,139 +75,111 @@ export function NieuweTaakDrawer({
     }
   }
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSubmit(e)
+  }
+
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-[420px] max-w-[95vw] sm:max-w-[420px] border-l border-border-subtle bg-bg-1">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle shrink-0">
-          <DrawerTitle className="text-[15px] font-medium text-fg-1">Nieuwe taak</DrawerTitle>
-          <DrawerClose asChild data-vaul-no-drag>
-            <Button variant="ghost" size="icon-sm" aria-label="Sluiten">
-              <SvgIcon name="x" size={16} />
+    <AppDrawer open={open} onOpenChange={onOpenChange} title="Nieuwe taak" width={520}>
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
+        data-vaul-no-drag
+        className="flex h-full flex-col"
+      >
+        <AppDrawerHeader>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <SvgIcon name="list-check" size={14} />
+            <span className="text-sm font-medium text-foreground">Nieuwe taak</span>
+          </div>
+          <DrawerClose asChild>
+            <Button variant="ghost" size="icon-sm" type="button" className="text-muted-foreground" aria-label="Sluiten">
+              <SvgIcon name="x" size={14} />
             </Button>
           </DrawerClose>
-        </div>
+        </AppDrawerHeader>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-4 overflow-y-auto flex-1">
-
-          {/* Titel */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="taak-titel" className="text-[12px] text-fg-2">Titel <span className="text-orange-500">*</span></label>
-            <Input
-              id="taak-titel"
-              type="text"
-              value={titel}
-              onChange={(e) => setTitel(e.target.value)}
-              placeholder="Wat moet er gedaan worden?"
-              autoFocus
-              className="h-auto rounded-lg bg-bg-2 px-3 py-2 text-[14px] placeholder:text-fg-3"
-              data-vaul-no-drag
-            />
-          </div>
-
+        <AppDrawerMeta>
           {/* Project */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="taak-project" className="text-[12px] text-fg-2">Project <span className="text-orange-500">*</span></label>
-            <Select value={projectId} onValueChange={(v) => setProjectId(v ?? '')}>
-              <SelectTrigger id="taak-project" className="w-full" data-vaul-no-drag>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.naam}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
+          <PillSelect
+            value={projectId}
+            onChange={setProjectId}
+            icon="chart-kanban"
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.naam}</option>
+            ))}
+          </PillSelect>
 
-          {/* Status + Priority row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="taak-status" className="text-[12px] text-fg-2">Status</label>
-              <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
-                <SelectTrigger id="taak-status" className="w-full" data-vaul-no-drag>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {KANBAN_COLUMNS.map((col) => (
-                      <SelectItem key={col.status} value={col.status}>{col.label}</SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Status */}
+          <PillSelect
+            value={status}
+            onChange={(v) => setStatus(v as TaskStatus)}
+            icon={statusCol?.iconName ?? 'circle-dashed'}
+          >
+            {KANBAN_COLUMNS.map((col) => (
+              <option key={col.status} value={col.status}>{col.label}</option>
+            ))}
+          </PillSelect>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="taak-prioriteit" className="text-[12px] text-fg-2">Prioriteit</label>
-              <Select value={prioriteit} onValueChange={(v) => setPrioriteit(v as TaskPriority)}>
-                <SelectTrigger id="taak-prioriteit" className="w-full" data-vaul-no-drag>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {(Object.keys(PRIORITY_CONFIG) as TaskPriority[]).map((p) => (
-                      <SelectItem key={p} value={p}>{PRIORITY_CONFIG[p].label}</SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          {/* Prioriteit */}
+          <PillSelect
+            value={prioriteit}
+            onChange={(v) => setPrioriteit(v as TaskPriority)}
+            icon={PRIORITY_ICON[prioriteit]}
+          >
+            {(Object.keys(PRIORITY_CONFIG) as TaskPriority[]).map((p) => (
+              <option key={p} value={p}>{PRIORITY_CONFIG[p].label}</option>
+            ))}
+          </PillSelect>
 
           {/* Deadline */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="taak-deadline" className="text-[12px] text-fg-2">Deadline</label>
-            <DatePicker
-              id="taak-deadline"
-              value={deadline}
-              onChange={setDeadline}
-              placeholder="Kies deadline"
-            />
-          </div>
+          <DatePicker
+            variant="pill"
+            value={deadline}
+            onChange={setDeadline}
+            placeholder="Deadline"
+            aria-label="Deadline"
+          />
+        </AppDrawerMeta>
+
+        <AppDrawerBody>
+          {/* Titel */}
+          <input
+            type="text"
+            value={titel}
+            onChange={(e) => setTitel(e.target.value)}
+            placeholder="Wat moet er gedaan worden?"
+            aria-label="Taaktitel"
+            autoFocus
+            className="bg-transparent outline-none text-[18px] font-semibold text-fg-1 placeholder:text-fg-disabled w-full shrink-0"
+          />
 
           {/* Beschrijving */}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="taak-beschrijving" className="text-[12px] text-fg-2">Beschrijving</label>
-            <Textarea
-              id="taak-beschrijving"
-              value={beschrijving}
-              onChange={(e) => setBeschrijving(e.target.value)}
-              rows={3}
-              placeholder="Optionele beschrijving..."
-              className="min-h-0 bg-bg-2 text-[13px] placeholder:text-fg-3"
-              data-vaul-no-drag
-            />
-          </div>
+          <Textarea
+            value={beschrijving}
+            onChange={(e) => setBeschrijving(e.target.value)}
+            placeholder="Optionele beschrijving..."
+            className="flex-1 min-h-[140px] bg-secondary border-0 rounded-md text-xs placeholder:text-xs focus-visible:ring-1 focus-visible:ring-ring/50 resize-none"
+          />
 
-          {error && (
-            <p className="text-[12px] text-orange-400 bg-orange-400/10 rounded px-3 py-2">{error}</p>
-          )}
-        </form>
+          {error && <p className="text-xs text-destructive shrink-0">{error}</p>}
+        </AppDrawerBody>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border-subtle shrink-0">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => onOpenChange(false)}
-            data-vaul-no-drag
-          >
-            Annuleer
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={loading || !titel.trim() || !projectId}
-            data-vaul-no-drag
-          >
+        <AppDrawerFooter>
+          <DrawerClose asChild>
+            <Button variant="outline" size="sm" type="button">Annuleren</Button>
+          </DrawerClose>
+          <Button type="submit" size="sm" disabled={loading || !titel.trim() || !projectId} className="gap-1.5">
+            <SvgIcon name="save" size={13} />
             {loading ? 'Aanmaken...' : 'Taak aanmaken'}
+            <span className="flex items-center gap-0.5 ml-1 opacity-50">
+              <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">⌘</kbd>
+              <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">↵</kbd>
+            </span>
           </Button>
-        </div>
-      </DrawerContent>
-    </Drawer>
+        </AppDrawerFooter>
+      </form>
+    </AppDrawer>
   )
 }

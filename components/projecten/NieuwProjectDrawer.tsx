@@ -1,24 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { cn } from '@/lib/utils'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/Dialog'
+import { DrawerClose } from '@/components/ui/Drawer'
+import {
+  AppDrawer,
+  AppDrawerHeader,
+  AppDrawerMeta,
+  AppDrawerBody,
+  AppDrawerFooter,
+} from '@/components/ui/AppDrawer'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Calendar } from '@/components/ui/calendar'
-import { nl } from 'date-fns/locale'
-import { createProject } from '@/app/(app)/projecten/actions'
-import { fmtDate, parseDate } from '@/lib/dates'
+import { DatePicker } from '@/components/ui/DatePicker'
+import { PillSelect } from '@/components/ui/PillSelect'
 import { SvgIcon } from '@/components/ui/SvgIcon'
+import { createProject } from '@/app/(app)/projecten/actions'
 import type { ProjectStatus } from '@/types/project'
-
-const STATUS_OPTIONS: { value: ProjectStatus; label: string; dot: string }[] = [
-  { value: 'gepland',      label: 'Gepland',      dot: '#FFB223' },
-  { value: 'bezig',        label: 'Bezig',        dot: '#46A557' },
-  { value: 'feedback',     label: 'Feedback',     dot: '#0072F5' },
-  { value: 'klaar',        label: 'Klaar',        dot: '#5B5BD6' },
-  { value: 'gearchiveerd', label: 'Gearchiveerd', dot: '#716C6C' },
-]
+import { PROJECT_COLUMNS } from '@/types/project'
 
 interface NieuwProjectDrawerProps {
   open: boolean
@@ -27,19 +25,21 @@ interface NieuwProjectDrawerProps {
 }
 
 export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwProjectDrawerProps) {
-  const [naam, setNaam]               = useState('')
+  const [naam, setNaam]                 = useState('')
   const [samenvatting, setSamenvatting] = useState('')
   const [beschrijving, setBeschrijving] = useState('')
-  const [klantId, setKlantId]         = useState('')
+  const [klantId, setKlantId]           = useState('')
   const kleur = '#5B5BD6'
-  const [status, setStatus]           = useState<ProjectStatus>('bezig')
-  const [deadline, setDeadline]       = useState('')
-  const [budget, setBudget]           = useState('')
-  const [loading, setLoading]         = useState(false)
-  const [error, setError]             = useState<string | null>(null)
-  const [openChip, setOpenChip]       = useState<string | null>(null)
+  const [status, setStatus]             = useState<ProjectStatus>('bezig')
+  const [deadline, setDeadline]         = useState('')
+  const [budget, setBudget]             = useState('')
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState<string | null>(null)
 
-  async function handleSubmit() {
+  const statusCol = PROJECT_COLUMNS.find((c) => c.status === status)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
     if (!naam.trim()) { setError('Vul een projectnaam in.'); return }
     setLoading(true)
     setError(null)
@@ -59,59 +59,82 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
     else onOpenChange(false)
   }
 
-  const selectedStatus = STATUS_OPTIONS.find((s) => s.value === status)!
-  const selectedKlant  = klanten.find((k) => k.id === klantId)
-
-  function toggleChip(chip: string, e: React.MouseEvent) {
-    e.stopPropagation()
-    setOpenChip((prev) => (prev === chip ? null : chip))
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleSubmit(e)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className="max-w-[720px] w-full p-0 gap-0 bg-bg-1 border border-border-subtle"
-        onClick={() => setOpenChip(null)}
+    <AppDrawer open={open} onOpenChange={onOpenChange} title="Nieuw project aanmaken" width={620}>
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
+        data-vaul-no-drag
+        className="flex h-full flex-col"
       >
-        <DialogTitle className="sr-only">Nieuw project aanmaken</DialogTitle>
-        {/* ── Breadcrumb header ── */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle shrink-0">
-          <div className="flex items-center gap-1.5 text-[12px] text-fg-3">
+        <AppDrawerHeader>
+          <div className="flex items-center gap-2 text-muted-foreground">
             <div
               className="size-4 rounded-sm flex items-center justify-center text-white text-[9px] font-bold shrink-0"
               style={{ backgroundColor: kleur }}
             >
               P
             </div>
-            <span>Projecten</span>
-            <SvgIcon name="chevron-right" size={10} className="text-fg-disabled" />
-            <span className="text-fg-2">Nieuw project</span>
+            <span className="text-sm font-medium text-foreground">Nieuw project</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onOpenChange(false)}
-            aria-label="Sluiten"
-            className="text-fg-3"
-          >
-            <SvgIcon name="x" size={15} />
-          </Button>
-        </div>
+          <DrawerClose asChild>
+            <Button variant="ghost" size="icon-sm" type="button" className="text-muted-foreground" aria-label="Sluiten">
+              <SvgIcon name="x" size={14} />
+            </Button>
+          </DrawerClose>
+        </AppDrawerHeader>
 
-        {/* ── Body ── */}
-        <div
-          className="px-6 py-5 flex flex-col gap-4 overflow-y-auto max-h-[65vh]"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Project icon */}
-          <div
-            className="size-10 rounded-xl flex items-center justify-center self-start shrink-0"
-            style={{ backgroundColor: kleur + '22' }}
+        <AppDrawerMeta>
+          {/* Status */}
+          <PillSelect
+            value={status}
+            onChange={(v) => setStatus(v as ProjectStatus)}
+            icon={statusCol?.iconName ?? 'circle-dashed'}
           >
-            <div className="size-4 rounded-full" style={{ backgroundColor: kleur }} />
+            {PROJECT_COLUMNS.map((col) => (
+              <option key={col.status} value={col.status}>{col.label}</option>
+            ))}
+          </PillSelect>
+
+          {/* Klant */}
+          {klanten.length > 0 && (
+            <PillSelect value={klantId} onChange={setKlantId} icon="users">
+              <option value="">Geen klant</option>
+              {klanten.map((k) => (
+                <option key={k.id} value={k.id}>{k.naam}</option>
+              ))}
+            </PillSelect>
+          )}
+
+          {/* Deadline */}
+          <DatePicker
+            variant="pill"
+            value={deadline}
+            onChange={setDeadline}
+            placeholder="Deadline"
+            aria-label="Deadline"
+          />
+
+          {/* Budget */}
+          <div className="relative inline-flex items-center">
+            <span className="pointer-events-none absolute left-2.5 text-[11px] text-muted-foreground">€</span>
+            <Input
+              type="number"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              placeholder="Budget"
+              min="0"
+              aria-label="Projectbudget in euro"
+              className="h-7 w-[110px] rounded-full border-border bg-secondary pl-6 pr-3 text-xs"
+            />
           </div>
+        </AppDrawerMeta>
 
+        <AppDrawerBody>
           {/* Naam */}
           <input
             type="text"
@@ -120,8 +143,7 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
             placeholder="Projectnaam"
             aria-label="Projectnaam"
             autoFocus
-            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
-            className="bg-transparent outline-none text-[22px] font-semibold text-fg-1 placeholder:text-fg-disabled w-full"
+            className="bg-transparent outline-none text-[22px] font-semibold text-fg-1 placeholder:text-fg-disabled w-full shrink-0"
           />
 
           {/* Samenvatting */}
@@ -131,202 +153,35 @@ export function NieuwProjectDrawer({ open, onOpenChange, klanten = [] }: NieuwPr
             onChange={(e) => setSamenvatting(e.target.value)}
             placeholder="Voeg een korte samenvatting toe..."
             aria-label="Korte samenvatting"
-            className="bg-transparent outline-none text-[14px] text-fg-2 placeholder:text-fg-3 w-full -mt-2"
+            className="bg-transparent outline-none text-[14px] text-fg-2 placeholder:text-fg-3 w-full -mt-2 shrink-0"
           />
-
-          {/* ── Chip row ── */}
-          <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
-
-            {/* Status */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={(e) => toggleChip('status', e)}
-                className={cn(
-                  'flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] border transition-colors',
-                  openChip === 'status'
-                    ? 'bg-bg-3 border-border text-fg-1'
-                    : 'bg-bg-0 border-border-subtle text-fg-2 hover:border-border hover:text-fg-1',
-                )}
-              >
-                <div className="size-2 rounded-full shrink-0" style={{ backgroundColor: selectedStatus.dot }} />
-                {selectedStatus.label}
-              </button>
-              {openChip === 'status' && (
-                <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg py-1 min-w-[160px]">
-                  {STATUS_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => { setStatus(opt.value); setOpenChip(null) }}
-                      className={cn(
-                        'w-full text-left flex items-center gap-2 px-3 py-1.5 text-[12px] hover:bg-bg-3 transition-colors',
-                        status === opt.value ? 'text-fg-1 font-medium' : 'text-fg-2',
-                      )}
-                    >
-                      <div className="size-2 rounded-full shrink-0" style={{ backgroundColor: opt.dot }} />
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Klant */}
-            {klanten.length > 0 && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={(e) => toggleChip('klant', e)}
-                  className={cn(
-                    'flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] border transition-colors',
-                    openChip === 'klant'
-                      ? 'bg-bg-3 border-border text-fg-1'
-                      : 'bg-bg-0 border-border-subtle text-fg-2 hover:border-border hover:text-fg-1',
-                  )}
-                >
-                  <SvgIcon name="user" size={11} />
-                  {selectedKlant?.naam ?? 'Klant'}
-                </button>
-                {openChip === 'klant' && (
-                  <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg py-1 min-w-[180px]">
-                    <button
-                      type="button"
-                      onClick={() => { setKlantId(''); setOpenChip(null) }}
-                      className={cn(
-                        'w-full text-left px-3 py-1.5 text-[12px] hover:bg-bg-3 transition-colors',
-                        !klantId ? 'text-fg-1 font-medium' : 'text-fg-2',
-                      )}
-                    >
-                      Geen klant
-                    </button>
-                    {klanten.map((k) => (
-                      <button
-                        key={k.id}
-                        type="button"
-                        onClick={() => { setKlantId(k.id); setOpenChip(null) }}
-                        className={cn(
-                          'w-full text-left px-3 py-1.5 text-[12px] hover:bg-bg-3 transition-colors',
-                          klantId === k.id ? 'text-fg-1 font-medium' : 'text-fg-2',
-                        )}
-                      >
-                        {k.naam}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Deadline */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={(e) => toggleChip('deadline', e)}
-                className={cn(
-                  'flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] border transition-colors',
-                  openChip === 'deadline'
-                    ? 'bg-bg-3 border-border text-fg-1'
-                    : deadline
-                    ? 'bg-bg-0 border-border-subtle text-fg-1 hover:border-border'
-                    : 'bg-bg-0 border-border-subtle text-fg-2 hover:border-border hover:text-fg-1',
-                )}
-              >
-                <SvgIcon name="calendar" size={11} />
-                {deadline ? fmtDate(deadline) : 'Deadline'}
-              </button>
-              {openChip === 'deadline' && (
-                <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg p-1">
-                  <Calendar
-                    mode="single"
-                    selected={deadline ? parseDate(deadline) : undefined}
-                    defaultMonth={deadline ? parseDate(deadline) : undefined}
-                    onSelect={(d) => {
-                      if (!d) return
-                      const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-                      setDeadline(ymd)
-                      setOpenChip(null)
-                    }}
-                    locale={nl}
-                    captionLayout="dropdown"
-                    autoFocus
-                  />
-                  {deadline && (
-                    <button
-                      type="button"
-                      onClick={() => { setDeadline(''); setOpenChip(null) }}
-                      className="mt-2 w-full text-[11px] text-fg-3 hover:text-fg-2 text-center"
-                    >
-                      Wis deadline
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Budget */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={(e) => toggleChip('budget', e)}
-                className={cn(
-                  'flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] border transition-colors',
-                  openChip === 'budget'
-                    ? 'bg-bg-3 border-border text-fg-1'
-                    : budget
-                    ? 'bg-bg-0 border-border-subtle text-fg-1 hover:border-border'
-                    : 'bg-bg-0 border-border-subtle text-fg-2 hover:border-border hover:text-fg-1',
-                )}
-              >
-                <span className="text-[11px] font-medium">€</span>
-                {budget ? `€ ${Number(budget).toLocaleString('nl-NL')}` : 'Budget'}
-              </button>
-              {openChip === 'budget' && (
-                <div className="absolute top-full left-0 mt-1 z-20 bg-bg-2 border border-border-subtle rounded-lg shadow-lg p-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[12px] text-fg-3">€</span>
-                    <Input
-                      type="number"
-                      value={budget}
-                      onChange={(e) => setBudget(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') setOpenChip(null) }}
-                      placeholder="0"
-                      min="0"
-                      aria-label="Projectbudget in euro"
-                      autoFocus
-                      className="h-auto w-[100px] rounded bg-bg-3 px-2 py-1.5 text-[12px]"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Beschrijving */}
           <textarea
             value={beschrijving}
             onChange={(e) => setBeschrijving(e.target.value)}
-            rows={5}
             placeholder="Schrijf een projectomschrijving, brief, of verzamel ideeën..."
             aria-label="Projectomschrijving"
-            className="bg-transparent outline-none resize-none text-[13px] text-fg-1 placeholder:text-fg-3 w-full"
+            className="flex-1 min-h-[160px] bg-transparent outline-none resize-none text-[13px] text-fg-1 placeholder:text-fg-3 w-full"
           />
 
-          {error && (
-            <p className="text-[12px] text-orange-400 bg-orange-400/10 rounded px-3 py-2">{error}</p>
-          )}
-        </div>
+          {error && <p className="text-xs text-destructive shrink-0">{error}</p>}
+        </AppDrawerBody>
 
-        {/* ── Footer ── */}
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border-subtle shrink-0">
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Annuleer
-          </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={loading || !naam.trim()}>
+        <AppDrawerFooter>
+          <DrawerClose asChild>
+            <Button variant="outline" size="sm" type="button">Annuleren</Button>
+          </DrawerClose>
+          <Button type="submit" size="sm" disabled={loading || !naam.trim()} className="gap-1.5">
+            <SvgIcon name="save" size={13} />
             {loading ? 'Aanmaken...' : 'Project aanmaken'}
+            <span className="flex items-center gap-0.5 ml-1 opacity-50">
+              <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">⌘</kbd>
+              <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">↵</kbd>
+            </span>
           </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </AppDrawerFooter>
+      </form>
+    </AppDrawer>
   )
 }

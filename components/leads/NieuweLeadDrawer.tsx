@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { DrawerClose } from '@/components/ui/Drawer'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerClose,
-  DrawerTitle,
-} from '@/components/ui/Drawer'
+  AppDrawer,
+  AppDrawerHeader,
+  AppDrawerBody,
+  AppDrawerFooter,
+} from '@/components/ui/AppDrawer'
 import { Button } from '@/components/ui/Button'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { createLead } from '@/app/(app)/leads/actions'
@@ -39,44 +40,49 @@ export function NieuweLeadDrawer({ open, onOpenChange, onCreated }: NieuweLeadDr
     }
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLFormElement>) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') e.currentTarget.requestSubmit()
+  }
+
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="w-[420px] max-w-[95vw] sm:max-w-[420px] border-l border-border-subtle bg-bg-1">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border-subtle shrink-0">
-          <DrawerTitle className="text-[15px] font-medium text-fg-1">Nieuwe lead</DrawerTitle>
-          <DrawerClose asChild data-vaul-no-drag>
-            <Button variant="ghost" size="icon-sm" aria-label="Sluiten">
-              <SvgIcon name="x" size={16} />
+    <AppDrawer open={open} onOpenChange={onOpenChange} title="Nieuwe lead" width={480}>
+      <form
+        onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
+        data-vaul-no-drag
+        className="flex h-full flex-col"
+      >
+        <AppDrawerHeader>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <SvgIcon name="user-plus" size={14} />
+            <span className="text-sm font-medium text-foreground">Nieuwe lead</span>
+          </div>
+          <DrawerClose asChild>
+            <Button variant="ghost" size="icon-sm" type="button" className="text-muted-foreground" aria-label="Sluiten">
+              <SvgIcon name="x" size={14} />
             </Button>
           </DrawerClose>
-        </div>
+        </AppDrawerHeader>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="flex flex-col gap-4 px-5 py-4 overflow-y-auto flex-1">
-            <LeadFormFields idPrefix="nieuw-lead-" />
-            {error && (
-              <p className="text-[12px] text-orange-400 bg-orange-400/10 rounded px-3 py-2">{error}</p>
-            )}
-          </div>
+        <AppDrawerBody className="gap-4">
+          <LeadFormFields idPrefix="nieuw-lead-" />
+          {error && <p className="text-xs text-destructive shrink-0">{error}</p>}
+        </AppDrawerBody>
 
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border-subtle shrink-0">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              data-vaul-no-drag
-            >
-              Annuleer
-            </Button>
-            <Button type="submit" disabled={loading} data-vaul-no-drag>
-              {loading ? 'Aanmaken...' : 'Lead aanmaken'}
-            </Button>
-          </div>
-        </form>
-      </DrawerContent>
-    </Drawer>
+        <AppDrawerFooter>
+          <DrawerClose asChild>
+            <Button variant="outline" size="sm" type="button">Annuleren</Button>
+          </DrawerClose>
+          <Button type="submit" size="sm" disabled={loading} className="gap-1.5">
+            <SvgIcon name="save" size={13} />
+            {loading ? 'Aanmaken...' : 'Lead aanmaken'}
+            <span className="flex items-center gap-0.5 ml-1 opacity-50">
+              <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">⌘</kbd>
+              <kbd className="inline-flex items-center justify-center w-4 h-4 text-[10px] rounded-sm bg-primary-foreground/10">↵</kbd>
+            </span>
+          </Button>
+        </AppDrawerFooter>
+      </form>
+    </AppDrawer>
   )
 }
