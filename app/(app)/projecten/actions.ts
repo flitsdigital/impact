@@ -300,7 +300,10 @@ export async function deleteProjectDocument(documentId: string): Promise<{ error
     .single()
 
   if (doc?.type === 'file') {
-    const path = doc.url.split('/project-docs/')[1]
+    // New rows store the bare storage path; legacy rows store the full public URL.
+    const path = doc.url.includes('/project-docs/')
+      ? doc.url.split('/project-docs/')[1]
+      : doc.url
     if (path) {
       await supabase.storage.from('project-docs').remove([path])
     }
@@ -332,9 +335,7 @@ export async function uploadProjectFile(
 
   if (uploadError) return { error: uploadError.message }
 
-  const { data: { publicUrl } } = supabase.storage.from('project-docs').getPublicUrl(path)
-
-  return { url: publicUrl }
+  return { url: path }
 }
 
 // ─── Labels ───────────────────────────────────────────────────────────────────

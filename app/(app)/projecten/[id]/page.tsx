@@ -81,6 +81,22 @@ export default async function ProjectDetailPage({
     documents = data ?? []
   } catch { /* table may not exist yet */ }
 
+  // Sign file URLs (bucket is private). Links pass through untouched.
+  if (documents.length > 0) {
+    documents = await Promise.all(
+      documents.map(async (doc) => {
+        if (doc.type !== 'file') return doc
+        const path = doc.url.includes('/project-docs/')
+          ? doc.url.split('/project-docs/')[1]   // legacy full-URL rows
+          : doc.url                               // new path-only rows
+        const { data } = await supabase.storage
+          .from('project-docs')
+          .createSignedUrl(path, 60 * 60)         // 1 hour
+        return { ...doc, url: data?.signedUrl ?? doc.url }
+      })
+    )
+  }
+
   const project: ProjectWithRelations = {
     ...(rawProject as any),
     prioriteit,
