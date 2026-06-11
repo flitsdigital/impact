@@ -6,6 +6,8 @@ import { ProjectKaart } from '@/components/projecten/ProjectKaart'
 import { TakenLijst } from '@/components/taken/TakenLijst'
 import { KanbanBoard } from '@/components/ui/KanbanBoard'
 import { TypeBadge, StatusBadge } from '@/components/klanten/KlantBadges'
+import { LeadKaart } from '@/components/leads/LeadKaart'
+import { LeadsLijst } from '@/components/leads/LeadsLijst'
 import { FactuurStatusBadge } from '@/components/facturatie/FactuurStatusBadge'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { SvgIcon } from '@/components/ui/SvgIcon'
@@ -14,6 +16,7 @@ import type { Project, TaskWithRelations, ProjectAssigneeProfile } from '@/types
 import { KANBAN_COLUMNS } from '@/types/project'
 import type { FactuurStatus } from '@/types/factuur'
 import { FACTUUR_STATUS_CONFIG } from '@/types/factuur'
+import type { Lead } from '@/types/lead'
 import { DemoBlock, SectionHeading } from './DemoBlock'
 
 // ─── Mockdata ─────────────────────────────────────────────────────────────────
@@ -84,6 +87,21 @@ const DEMO_PROJECT: Project & { klanten?: { id: string; naam: string } | null } 
   klanten: { id: 'k1', naam: 'JHL Automotive' },
 }
 
+const DEMO_LEADS: Lead[] = [
+  {
+    id: 'l1', bedrijfsnaam: 'Bakkerij Visser', contactpersoon: 'Pieter Visser',
+    email: 'info@bakkerijvisser.nl', telefoon: null, bron: 'website', waarde: 2500,
+    notities: null, status: 'offerte',
+    created_at: '2026-06-01T12:00:00Z', updated_at: '2026-06-01T12:00:00Z',
+  },
+  {
+    id: 'l2', bedrijfsnaam: 'Garage Jansen', contactpersoon: null,
+    email: null, telefoon: null, bron: 'referral', waarde: null,
+    notities: null, status: 'nieuw',
+    created_at: '2026-06-08T12:00:00Z', updated_at: '2026-06-08T12:00:00Z',
+  },
+]
+
 // ─── Sectie ───────────────────────────────────────────────────────────────────
 
 export function DomainSection() {
@@ -147,6 +165,22 @@ export function DomainSection() {
         {(Object.keys(FACTUUR_STATUS_CONFIG) as FactuurStatus[]).map((s) => (
           <FactuurStatusBadge key={s} status={s} />
         ))}
+      </DemoBlock>
+
+      <DemoBlock
+        title="LeadKaart · LeadsLijst"
+        path="@/components/leads/{LeadKaart,LeadsLijst}"
+        description="Pipeline-kaart en tabel voor leads (LEAD_COLUMNS: nieuw → contact → offerte → gewonnen/verloren). Waarde via formatEur."
+        className="flex-col items-start"
+      >
+        <div className="flex gap-3">
+          {DEMO_LEADS.map((l) => (
+            <div key={l.id} className="w-64"><LeadKaart lead={l} isDragging={false} /></div>
+          ))}
+        </div>
+        <div className="w-full h-40 overflow-hidden rounded-lg border border-border-subtle">
+          <LeadsLijst leads={DEMO_LEADS} onLeadClick={() => {}} />
+        </div>
       </DemoBlock>
 
       <DemoBlock

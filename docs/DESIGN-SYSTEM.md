@@ -112,6 +112,10 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `TaakKaart` | `components/projecten/TaakKaart` | Taak-kanban-kaart (`showProject?` voor cross-project-views) |
 | `ProjectKaart` | `components/projecten/ProjectKaart` | Project-kanban-kaart |
 | `TakenLijst` | `components/taken/TakenLijst` | Takentabel (`showProject?`) |
+| `LeadKaart` | `components/leads/LeadKaart` | Pipeline-kaart voor leads (bedrijf, contactpersoon, bron, waarde) |
+| `LeadsLijst` | `components/leads/LeadsLijst` | Leadstabel (bedrijf, contactpersoon, status, bron, waarde, datum) |
+| `LeadFormFields` | `components/leads/LeadFormFields` | Gedeelde veldenset lead-formulier (`lead?` voor defaults, `idPrefix`) |
+| `NieuweLeadDrawer` | `components/leads/NieuweLeadDrawer` | Aanmaak-drawer voor leads |
 | `KanbanBoard` (taak-adapter) | `components/projecten/KanbanBoard` | Dunne adapter: KANBAN_COLUMNS + TaakKaart op het generieke bord |
 | `DocumentIcon` | `components/projecten/DocumentIcon` | Bestandstype-icoon bij bijlagen |
 
@@ -124,6 +128,7 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `PRIORITY_CONFIG` / `PRIORITY_ICON` | `types/project.ts` | Prioriteit-pills en -iconen |
 | `STATUS_ORDER/LABEL/ICON/COLOR` (posts) | `types/post.ts` | Content-module |
 | `FACTUUR_STATUS_CONFIG` / `_NEXT` | `types/factuur.ts` | FactuurStatusBadge, tijdlijn |
+| `LEAD_COLUMNS` / `BRON_LABEL` / `CONTACT_TYPE_CONFIG` | `types/lead.ts` | Leads-kanban, StatusChip, contactmomenten |
 
 ---
 
