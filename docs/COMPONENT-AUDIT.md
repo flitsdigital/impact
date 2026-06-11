@@ -213,6 +213,27 @@ Niet elke rauwe button is fout (tab-knoppen met `border-b-2`-stijl vallen buiten
 - **Twee `KanbanBoard`-bestanden** — `components/ui/KanbanBoard.tsx` (generiek) en `components/projecten/KanbanBoard.tsx` (dunne taak-adapter). Dit is juist een **goed** patroon, maar de identieke naam is verwarrend. Suggestie: hernoem de adapter naar `TaakKanban.tsx`.
 - **`PageHeader`/`PageToolbar`** worden al overal netjes hergebruikt 👍 — alleen `ProjectDetailModule` bouwt z'n eigen breadcrumb-header (regels 218–305); prima, dat is echt een ander ding.
 
+## Status — geïmplementeerd 2026-06-11 ✅
+
+Alle punten 1–7 uit de aanbevolen volgorde zijn doorgevoerd (commit `58bd1db`, gemerged naar main):
+
+- **Nieuw in `components/ui/`:** `SegmentedControl`, `SearchInput`, `StatusChip`, `AvatarStack`, `EmptyState`
+- **Nieuw per domein:** `taken/TakenLijst` (met `showProject`-prop), `klanten/KlantBadges`, `klanten/KlantFormFields`, `facturatie/FactuurStatusBadge`
+- **Nieuw in `lib/`:** `dates.ts` uitgebreid met `parseDate`/`fmtDate(opts)`/`isOverdue`; `format.ts` met `formatEur` — beide met vitest-tests
+- In FacturatieTijdlijn bleek nog een **zevende** segmented control (26w/52w-horizon) — ook vervangen
+- Status-dropdown in ProjectDetailModule vervangen door `ui/DropdownMenu` (a11y-winst)
+
+Bewuste visuele unificaties (geen bugs):
+- Projecten-viewswitcher heeft nu de canonieke pill-stijl (donkere `bg-bg-0`-container)
+- Zoekvelden in KlantenTable/FacturatieTijdlijn hebben nu de pill-stijl van de overige modules
+- Facturatie-tooltip toont de factuurstatus nu als pill-badge (was alleen gekleurde tekst)
+- In de klant-bewerkdialog staat het Status-veld nu ná email/telefoon (gedeelde veldenset)
+- `ContentModule` gebruikte `T00:00:00` i.p.v. `T12:00:00` voor datums — gefixt via `parseDate`
+
+Bewust niet gedaan: avatar-picker in `NieuwePostDrawer` (interactief, ander ding), relative-date-helper in `KlantenTable` (geen duplicaat), losse rauwe buttons buiten de switchers (opportunistisch), hernoemen `projecten/KanbanBoard` → `TaakKanban` (suggestie, geen functionele winst).
+
+Verificatie: `tsc --noEmit` clean, vitest 21/21, `next build` groen, ESLint zonder nieuwe meldingen (resterende warnings zijn pre-existing), React Doctor-vinding in nieuwe code gefixt (TYPE_CONFIG naar module-scope).
+
 ## Aanbevolen volgorde (ronde 2)
 
 1. **`SegmentedControl`** (1.1) — kleinste effort, grootste zichtbare consistentiewinst, 5 call-sites.
