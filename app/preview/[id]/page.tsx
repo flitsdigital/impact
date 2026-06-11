@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { PostStatus, PostType } from '@/types/post'
 import { STATUS_LABEL, STATUS_COLOR } from '@/types/post'
 import type { TeamMember } from '@/types/team'
@@ -17,7 +17,7 @@ const TYPE_LABEL: Record<PostType, string> = {
 
 export default async function PreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Fetch post
   const { data: post } = await supabase
