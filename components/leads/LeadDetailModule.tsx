@@ -41,7 +41,8 @@ function EditDialog({
   lead: Lead
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSaved: () => void
+  /** Krijgt de opgeslagen waarden terug zodat de pagina ze direct kan tonen */
+  onSaved: (updates: Partial<Lead>) => void
 }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -51,12 +52,12 @@ function EditDialog({
     const data = new FormData(e.currentTarget)
 
     const waardeRaw = data.get('waarde') as string
-    const input = {
+    const input: Partial<Lead> = {
       bedrijfsnaam:   data.get('bedrijfsnaam') as string,
       contactpersoon: (data.get('contactpersoon') as string) || null,
       email:          (data.get('email') as string) || null,
       telefoon:       (data.get('telefoon') as string) || null,
-      bron:           data.get('bron') as string,
+      bron:           data.get('bron') as Lead['bron'],
       waarde:         waardeRaw ? Number(waardeRaw) : null,
       notities:       (data.get('notities') as string) || null,
     }
@@ -68,7 +69,7 @@ function EditDialog({
       } else {
         setError(null)
         onOpenChange(false)
-        onSaved()
+        onSaved(input)
         toast('Lead bijgewerkt')
       }
     })
@@ -503,7 +504,11 @@ export function LeadDetailModule({ lead: initialLead, contactmomenten: initialMo
         lead={lead}
         open={editOpen}
         onOpenChange={setEditOpen}
-        onSaved={() => router.refresh()}
+        onSaved={(updates) => {
+          setLead((l) => ({ ...l, ...updates }))
+          setNotitiesVal(updates.notities ?? '')
+          router.refresh()
+        }}
       />
     </div>
   )
