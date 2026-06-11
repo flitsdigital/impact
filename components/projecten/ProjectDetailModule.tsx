@@ -311,7 +311,7 @@ export function ProjectDetailModule({
 
         {/* ── Overzicht tab ── */}
         {tab === 'overzicht' && (
-          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
             {/* Project overview header */}
             <div className="w-full max-w-8/12 mx-auto px-8 pt-6 pb-4 shrink-0 flex flex-col gap-3">
               {/* Project number */}
@@ -540,8 +540,8 @@ export function ProjectDetailModule({
               </div>
             </div>
 
-            {/* Embedded kanban */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            {/* Embedded kanban — vult de resterende hoogte maar nooit minder dan 40rem */}
+            <div className="flex-1 min-h-[40rem] overflow-hidden">
               <KanbanBoard
                 tasks={filteredTasks}
                 onTaskClick={openTaskDetail}
