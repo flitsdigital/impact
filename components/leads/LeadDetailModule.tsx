@@ -537,7 +537,7 @@ export function LeadDetailModule({
                 type="button"
                 onClick={() => setEditingNotities(true)}
                 className={cn(
-                  'flex-1 text-[13px] leading-relaxed text-left w-full whitespace-pre-wrap transition-colors',
+                  'flex-1 flex items-start text-[13px] leading-relaxed text-left w-full whitespace-pre-wrap transition-colors',
                   lead.notities ? 'text-fg-1' : 'text-fg-3 hover:text-fg-2',
                 )}
                 title="Beschrijving bewerken"
