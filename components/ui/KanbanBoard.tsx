@@ -135,7 +135,7 @@ export function KanbanBoard<TItem>({
                   />
                 )}
                 <span
-                  className={cn('text-[12px] font-medium whitespace-nowrap', col.textClass ?? 'text-fg-2')}
+                  className="text-[12px] font-medium whitespace-nowrap text-fg-1"
                   style={{ writingMode: 'vertical-rl' }}
                 >
                   {col.label}
@@ -171,7 +171,7 @@ export function KanbanBoard<TItem>({
                       className={cn('shrink-0', col.textClass ?? 'text-fg-2')}
                     />
                   )}
-                  <span className={cn('text-[12px] font-medium', col.textClass ?? 'text-fg-1')}>
+                  <span className="text-[12px] font-medium text-fg-1">
                     {col.label}
                   </span>
                 </div>
