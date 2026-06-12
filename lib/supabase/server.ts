@@ -25,3 +25,9 @@ export async function createClient() {
     }
   )
 }
+
+export async function requireAuth(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Niet ingelogd.')
+  return user
+}

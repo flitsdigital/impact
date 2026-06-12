@@ -18,7 +18,7 @@ import type { Post, PostStatus, PostType } from '@/types/post'
 import { STATUS_ICON, STATUS_LABEL, STATUS_ORDER } from '@/types/post'
 import type { Klant } from '@/types/klant'
 import type { TeamMember } from '@/types/team'
-import { fmtDate, parseDate } from '@/lib/dates'
+import { fmtDate, parseDate, toLocalDateStr } from '@/lib/dates'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -79,15 +79,6 @@ function getISOWeek(date: Date): number {
   d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7))
   const jan4 = new Date(d.getFullYear(), 0, 4)
   return 1 + Math.round(((d.getTime() - jan4.getTime()) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7)
-}
-
-function toDateKey(date: Date): string {
-  // Use local date parts — toISOString() returns UTC which shifts the date
-  // in UTC+ timezones (e.g. the Netherlands, UTC+2) causing off-by-one errors.
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 function getMonthCalendar(year: number, month: number): Date[][] {
@@ -256,7 +247,7 @@ function MaandView({ posts, currentDate, onAdd, drag, onEdit }: {
   const month = currentDate.getMonth()
   const weeks = getMonthCalendar(year, month)
   const byDate = groupByDate(posts)
-  const today = toDateKey(new Date())
+  const today = toLocalDateStr(new Date())
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
@@ -272,7 +263,7 @@ function MaandView({ posts, currentDate, onAdd, drag, onEdit }: {
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 border-b border-border last:border-b-0 flex-1 min-h-[80px]">
             {week.map((day) => {
-              const key = toDateKey(day)
+              const key = toLocalDateStr(day)
               const dayPosts = byDate.get(key) ?? []
               const inMonth = day.getMonth() === month
               const isToday = key === today
@@ -354,7 +345,7 @@ function WeekView({ posts, currentDate, onAdd, drag, onEdit }: {
   return (
     <div className="flex flex-1 overflow-hidden">
       {days.map((day, di) => {
-        const key = toDateKey(day)
+        const key = toLocalDateStr(day)
         const dayPosts = byDate.get(key) ?? []
         const label = `${DAYS_NL_LONG[di]} ${day.getDate()} ${MONTHS_NL[day.getMonth()].toLowerCase()}`
         const isOver = drag.dragOverKey === key
@@ -421,7 +412,7 @@ function KanbanView({ posts, currentDate, onAdd, onEdit, onMove }: {
   onMove: (postId: string, toStatus: PostStatus) => void
 }) {
   const weekDays = getWeekDays(currentDate)
-  const weekKeys = new Set(weekDays.map(toDateKey))
+  const weekKeys = new Set(weekDays.map(toLocalDateStr))
   const inWeek = posts.filter((p) => !p.scheduled_at || weekKeys.has(p.scheduled_at.slice(0, 10)))
 
   return (
@@ -455,7 +446,7 @@ function LijstView({ posts, onAdd, onEdit }: {
   for (const p of posts) {
     const d = p.scheduled_at ? parseDate(p.scheduled_at) : new Date()
     const mon = getMonday(d)
-    const key = toDateKey(mon)
+    const key = toLocalDateStr(mon)
     if (!weeks.has(key)) {
       const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
       weeks.set(key, { label: `Week van ${formatDateNL(mon)} / ${formatDateNL(sun)}`, date: mon, posts: [] })

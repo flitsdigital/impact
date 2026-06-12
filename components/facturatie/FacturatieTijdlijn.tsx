@@ -20,6 +20,7 @@ import { toggleInvoiceRecord, cycleFactuurStatus } from '@/app/(app)/timeline/ac
 import type { KlantBilling, ComputedInvoice, FactuurStatus } from '@/types/factuur'
 import { FACTUUR_STATUS_NEXT } from '@/types/factuur'
 import { formatEur } from '@/lib/format'
+import { toLocalDateStr } from '@/lib/dates'
 import { FactuurStatusBadge } from './FactuurStatusBadge'
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
@@ -49,15 +50,6 @@ function getMonday(date: Date): Date {
 
 function diffDays(a: Date, b: Date): number {
   return Math.floor((a.getTime() - b.getTime()) / 86_400_000)
-}
-
-function toDateStr(d: Date): string {
-  // Use local date parts — toISOString() converts to UTC, shifting the date
-  // back in UTC+ timezones (e.g. Netherlands UTC+2) causing off-by-one errors.
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
 }
 
 function addMonths(d: Date, n: number): Date {
@@ -91,7 +83,7 @@ function calcRecurringDates(klant: KlantBilling, until: Date): string[] {
   let cur = new Date(start)
 
   while (cur <= until && cur <= endD) {
-    dates.push(toDateStr(cur))
+    dates.push(toLocalDateStr(cur))
     switch (klant.billing_cycle) {
       case '4_weeks': cur.setDate(cur.getDate() + 28); break
       case '6_weeks': cur.setDate(cur.getDate() + 42); break
@@ -248,7 +240,6 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
   const [, startTransition] = useTransition()
 
   const scrollRef = useRef<HTMLDivElement>(null)
-  const tooltipRef = useRef<HTMLDivElement>(null)
 
   const TODAY = useMemo(() => {
     const d = new Date(); d.setHours(0, 0, 0, 0); return d
@@ -259,18 +250,17 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
     const d = new Date(TODAY); d.setDate(d.getDate() - 28); return getMonday(d)
   }, [TODAY])
 
-  const totalWeeks = horizon
 
   // All weeks in the timeline
   const weeks = useMemo(() => {
     const result: { date: Date; weekNum: number }[] = []
     const cursor = new Date(timelineStart)
-    for (let i = 0; i < totalWeeks; i++) {
+    for (let i = 0; i < horizon; i++) {
       result.push({ date: new Date(cursor), weekNum: getISOWeek(cursor) })
       cursor.setDate(cursor.getDate() + 7)
     }
     return result
-  }, [timelineStart, totalWeeks])
+  }, [timelineStart, horizon])
 
   // Group weeks by month (for month header row)
   const monthGroups = useMemo(() => {
@@ -285,8 +275,8 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
   }, [weeks])
 
   const timelineEnd = useMemo(() => {
-    const d = new Date(timelineStart); d.setDate(d.getDate() + totalWeeks * 7); return d
-  }, [timelineStart, totalWeeks])
+    const d = new Date(timelineStart); d.setDate(d.getDate() + horizon * 7); return d
+  }, [timelineStart, horizon])
 
   // Today's x position (within timeline area, i.e. excluding LEFT_W)
   const todayX = useMemo(() => {
@@ -440,7 +430,7 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
 
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const totalW = LEFT_W + totalWeeks * WEEK_W
+  const totalW = LEFT_W + horizon * WEEK_W
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -602,7 +592,7 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
           <div style={{ position: 'relative' }}>
 
             {/* Today vertical line */}
-            {todayX >= 0 && todayX <= totalWeeks * WEEK_W && (
+            {todayX >= 0 && todayX <= horizon * WEEK_W && (
               <div style={{
                 position: 'absolute',
                 left: LEFT_W + todayX,
@@ -636,7 +626,7 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
                 : timelineEnd
 
               const barStartX = Math.max(0, diffDays(cStart, timelineStart) * DAY_W)
-              const barEndX = Math.min(totalWeeks * WEEK_W, diffDays(cEnd, timelineStart) * DAY_W)
+              const barEndX = Math.min(horizon * WEEK_W, diffDays(cEnd, timelineStart) * DAY_W)
               const barWidth = Math.max(0, barEndX - barStartX)
 
               return (
@@ -686,7 +676,7 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
                   </div>
 
                   {/* Timeline area */}
-                  <div style={{ position: 'relative', width: totalWeeks * WEEK_W, height: ROW_H }}>
+                  <div style={{ position: 'relative', width: horizon * WEEK_W, height: ROW_H }}>
                     {/* Week background cells */}
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', pointerEvents: 'none' }}>
                       {weeks.map((_, i) => (
@@ -720,7 +710,7 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
                     {/* Invoice dots */}
                     {invoices.map((inv) => {
                       const x = diffDays(inv.date, timelineStart) * DAY_W
-                      if (x < 0 || x > totalWeeks * WEEK_W) return null
+                      if (x < 0 || x > horizon * WEEK_W) return null
 
                       const isPast = inv.date < TODAY
                       const color = dotColor(inv, TODAY)
@@ -781,7 +771,6 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
       {/* ── Tooltip ─────────────────────────────────────────────────────────── */}
       {tooltip && (
         <div
-          ref={tooltipRef}
           style={{
             position: 'fixed',
             left: tooltip.x + 12,

@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import { z } from 'zod/v4'
 
 const klantSchema = z.object({
@@ -15,12 +15,6 @@ const klantSchema = z.object({
   website: z.string().optional().nullable(),
   notities: z.string().optional().nullable(),
 })
-
-async function requireAuth(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Niet ingelogd.')
-  return user
-}
 
 export async function createKlant(
   _prev: { error?: string } | null,

@@ -1,17 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import type { InvoiceRecord, FactuurStatus } from '@/types/factuur'
 import { FACTUUR_STATUS_NEXT } from '@/types/factuur'
 
 // ─── Toggle invoiced status for a recurring invoice date ──────────────────────
-
-async function requireAuth(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Niet ingelogd.')
-  return user
-}
 
 export async function toggleInvoiceRecord(
   klantId:  string,

@@ -1,16 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import type { Task, TaskStatus, TaskPriority } from '@/types/project'
 
 // ─── Projects ─────────────────────────────────────────────────────────────────
-
-async function requireAuth(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Niet ingelogd.')
-  return user
-}
 
 export async function createProject(
   _prev: { error?: string } | null,
@@ -198,8 +192,6 @@ export async function moveTask(
   taskId: string,
   newStatus: TaskStatus,
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
-  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
   return updateTask(taskId, { status: newStatus })
 }
 

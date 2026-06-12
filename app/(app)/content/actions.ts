@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import { z } from 'zod/v4'
 import type { PostStatus } from '@/types/post'
 
@@ -20,12 +20,6 @@ const postSchema = z.object({
 })
 
 // ─── Create post ─────────────────────────────────────────────────────────────
-
-async function requireAuth(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Niet ingelogd.')
-  return user
-}
 
 export async function createPost(
   _prev: { error?: string } | null,

@@ -35,7 +35,7 @@ import {
   deleteLeadDocument,
   uploadLeadFile,
 } from '@/app/(app)/leads/actions'
-import { fmtDate } from '@/lib/dates'
+import { fmtDate, toLocalDateStr } from '@/lib/dates'
 import { formatEur } from '@/lib/format'
 import { LeadFormFields } from './LeadFormFields'
 
@@ -117,11 +117,6 @@ function autoGrow(el: HTMLTextAreaElement) {
 
 // ─── Contactmomenten-sidebar ──────────────────────────────────────────────────
 
-function todayStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 function ContactmomentForm({
   leadId,
   onAdded,
@@ -130,7 +125,7 @@ function ContactmomentForm({
   onAdded: (moment: LeadContactmoment) => void
 }) {
   const [type, setType] = useState<ContactmomentType>('gebeld')
-  const [datum, setDatum] = useState(() => todayStr())
+  const [datum, setDatum] = useState(() => toLocalDateStr(new Date()))
   const [notitie, setNotitie] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -145,7 +140,7 @@ function ContactmomentForm({
     } else if (res.contactmoment) {
       onAdded(res.contactmoment)
       setNotitie('')
-      setDatum(todayStr())
+      setDatum(toLocalDateStr(new Date()))
     }
   }
 

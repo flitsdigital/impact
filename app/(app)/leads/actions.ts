@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, requireAuth } from '@/lib/supabase/server'
 import { z } from 'zod/v4'
 import type { Lead, LeadContactmoment } from '@/types/lead'
 
@@ -20,12 +20,6 @@ const contactmomentSchema = z.object({
   datum:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ongeldige datum'),
   notitie: z.string().optional().nullable(),
 })
-
-async function requireAuth(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Niet ingelogd.')
-  return user
-}
 
 function revalidateLeads(leadId?: string) {
   revalidatePath('/leads')

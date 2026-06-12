@@ -4,6 +4,7 @@ import * as React from "react"
 import { nl } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
+import { toLocalDateStr } from "@/lib/dates"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SvgIcon } from "@/components/ui/SvgIcon"
@@ -14,14 +15,6 @@ function parseValue(value?: string): Date | undefined {
   const [y, m, d] = value.split("-").map(Number)
   if (!y || !m || !d) return undefined
   return new Date(y, m - 1, d, 12)
-}
-
-/** Formatteer een Date terug naar "YYYY-MM-DD". */
-function toValue(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
 }
 
 function formatLabel(date: Date): string {
@@ -78,7 +71,7 @@ export function DatePicker({
 
   const handleSelect = (date: Date | undefined) => {
     if (!date) return
-    commit(toValue(date))
+    commit(toLocalDateStr(date))
     setOpen(false)
   }
 
