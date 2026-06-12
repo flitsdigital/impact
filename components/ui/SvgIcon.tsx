@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
-// Every filename (without .svg) that exists in /public/icons
-const AVAILABLE = new Set([
+// Custom-ontworpen iconen die in /public/icons staan
+const CUSTOM_ICONS = [
   'arrows-sort', 'bolt', 'calendar', 'caret-down', 'chart-gantt', 'chart-kanban',
   'check', 'chevron-left', 'chevron-right', 'chevrons-left',
   'circle', 'circle-check', 'circle-check-stroke', 'circle-dashed', 'circle-notch',
@@ -11,14 +11,7 @@ const AVAILABLE = new Set([
   'road', 'scrubber', 'signal-bars', 'text-size', 'text-size-1',
   'triangle-exclamation', 'user-clock', 'user-plus', 'user-plus-1', 'users',
   'video',
-  // Toegevoegd bij de Lucide → custom-icon migratie (placeholders, vervang vrij)
-  'archive', 'arrow-left', 'badge-check', 'check-square', 'chevron-down',
-  'chevron-up', 'chevrons-right', 'circle-pause', 'clock', 'corner-down-right',
-  'external-link', 'file-plus', 'file-text', 'folder-open', 'link',
-  'list', 'log-out', 'map', 'message-square', 'pencil',
-  'refresh', 'save', 'settings', 'smile', 'star',
-  'table', 'trash', 'upload', 'user', 'x',
-])
+]
 
 /**
  * Tijdelijke placeholder-iconen: deze bestaan wel in /public/icons maar zijn
@@ -36,6 +29,9 @@ const PLACEHOLDER = new Set([
   'refresh', 'save', 'settings', 'smile', 'star',
   'table', 'trash', 'upload', 'user', 'x',
 ])
+
+// Elke bestandsnaam (zonder .svg) die in /public/icons bestaat
+const AVAILABLE = new Set([...CUSTOM_ICONS, ...PLACEHOLDER])
 
 /** Alle beschikbare icoonnamen, gesorteerd — gebruikt door de design-system pagina. */
 export const ICON_NAMES: string[] = [...AVAILABLE].sort()

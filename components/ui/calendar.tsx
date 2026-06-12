@@ -10,7 +10,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/Button"
-import { ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon } from "lucide-react"
+import { SvgIcon } from "@/components/ui/SvgIcon"
 
 function Calendar({
   className,
@@ -144,22 +144,12 @@ function Calendar({
             />
           )
         },
-        Chevron: ({ className, orientation, ...props }) => {
-          if (orientation === "left") {
-            return (
-              <ChevronLeftIcon className={cn("size-4", className)} {...props} />
-            )
-          }
-
-          if (orientation === "right") {
-            return (
-              <ChevronRightIcon className={cn("size-4", className)} {...props} />
-            )
-          }
-
-          return (
-            <ChevronDownIcon className={cn("size-4", className)} {...props} />
-          )
+        Chevron: ({ className, orientation }) => {
+          const name =
+            orientation === "left" ? "chevron-left"
+            : orientation === "right" ? "chevron-right"
+            : "chevron-down"
+          return <SvgIcon name={name} size={16} className={cn(className)} />
         },
         DayButton: ({ ...props }) => (
           <CalendarDayButton locale={locale} {...props} />

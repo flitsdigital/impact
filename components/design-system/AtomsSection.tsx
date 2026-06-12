@@ -36,7 +36,7 @@ import { KANBAN_COLUMNS, PROJECT_COLUMNS } from '@/types/project'
 import { DemoBlock, SectionHeading } from './DemoBlock'
 
 const BUTTON_VARIANTS = ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] as const
-const BADGE_VARIANTS = ['default', 'secondary', 'outline', 'destructive', 'ghost', 'link'] as const
+const BADGE_VARIANTS = ['default', 'secondary', 'outline', 'destructive'] as const
 
 const DEMO_PEOPLE = [
   { key: '1', name: 'Jordi Klavers' },
