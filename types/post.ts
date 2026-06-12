@@ -49,14 +49,3 @@ export interface Post {
   created_at: string
   updated_at: string
 }
-
-export interface PostLog {
-  id: string
-  post_id: string
-  user_id: string | null
-  action: string
-  from_status: PostStatus | null
-  to_status: PostStatus | null
-  note: string | null
-  created_at: string
-}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { DrawerClose } from '@/components/ui/Drawer'
 import {
   AppDrawer,
@@ -35,7 +35,6 @@ export function TaakDetailDrawer({ task, open, onOpenChange, onDelete }: TaakDet
   const [saving, setSaving] = useState(false)
   const [commentLoading, setCommentLoading] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
-  const titleRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open && task) {
@@ -90,7 +89,6 @@ export function TaakDetailDrawer({ task, open, onOpenChange, onDelete }: TaakDet
             FLT-{task?.task_number}
           </span>
           <input
-            ref={titleRef}
             value={titel}
             onChange={(e) => setTitel(e.target.value)}
             className="text-[16px] font-medium text-fg-1 bg-transparent border-none outline-none w-full"

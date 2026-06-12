@@ -1,7 +1,6 @@
 export type ProjectStatus = 'gepland' | 'bezig' | 'feedback' | 'klaar' | 'gearchiveerd'
 export type TaskStatus    = 'todo' | 'bezig' | 'feedback' | 'klaar'
 export type TaskPriority  = 'urgent' | 'hoog' | 'normaal' | 'laag'
-export type SprintStatus  = 'gepland' | 'actief' | 'voltooid'
 
 export interface Project {
   id:             string
@@ -24,16 +23,6 @@ export interface ProjectLabel {
   project_id: string
   naam:       string
   kleur:      string
-  created_at: string
-}
-
-export interface Sprint {
-  id:         string
-  project_id: string
-  naam:       string
-  start_date: string | null
-  end_date:   string | null
-  status:     SprintStatus
   created_at: string
 }
 
@@ -63,25 +52,6 @@ export interface Task {
   volgorde:        number
   created_at:      string
   updated_at:      string
-}
-
-export interface TaskComment {
-  id:         string
-  task_id:    string
-  author_id:  string | null
-  inhoud:     string
-  created_at: string
-  updated_at: string
-}
-
-export interface TaskAssignee {
-  task_id:    string
-  profile_id: string
-}
-
-export interface TaskLabel {
-  task_id:  string
-  label_id: string
 }
 
 // ─── Project kanban columns ──────────────────────────────────────────────────
@@ -146,14 +116,6 @@ export interface TaskWithRelations extends Task {
   subtasks:        Task[]          // direct children (parent_id = this.id)
   subtask_done:    number          // computed: subtasks with status='klaar'
   subtask_total:   number          // computed: subtasks.length
-}
-
-export interface CommentWithAuthor extends TaskComment {
-  author: {
-    id:         string
-    full_name:  string | null
-    avatar_url: string | null
-  } | null
 }
 
 // ─── Kanban helpers ───────────────────────────────────────────────────────────

@@ -20,14 +20,12 @@ import { TaakDetailDrawer } from '@/components/projecten/TaakDetailDrawer'
 import { NieuweTaakDrawer } from '@/components/projecten/NieuweTaakDrawer'
 import type { Project, Task, TaskWithRelations, TaskStatus, TaskPriority } from '@/types/project'
 import { PRIORITY_CONFIG } from '@/types/project'
-import type { TeamMember } from '@/types/team'
 import { moveTask } from '@/app/(app)/projecten/actions'
 type View = 'kanban' | 'lijst'
 
 interface TakenModuleProps {
   projects:    Array<Project & { klanten?: { id: string; naam: string } | null }>
   tasks:       TaskWithRelations[]
-  teamMembers: TeamMember[]
 }
 
 const VIEW_TABS: { value: View; label: string; icon: string }[] = [
@@ -35,7 +33,7 @@ const VIEW_TABS: { value: View; label: string; icon: string }[] = [
   { value: 'kanban', label: 'Kanban', icon: 'chart-kanban' },
 ]
 
-export function TakenModule({ projects, tasks: initialTasks, teamMembers: _teamMembers }: TakenModuleProps) {
+export function TakenModule({ projects, tasks: initialTasks }: TakenModuleProps) {
   const [view, setView]                         = useState<View>('kanban')
   const [searchQuery, setSearchQuery]           = useState('')
   const [filterProject, setFilterProject]       = useState<string>('all')

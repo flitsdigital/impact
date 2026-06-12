@@ -171,7 +171,6 @@ interface Props {
 export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defaultDate, post }: Props) {
   const isEdit = !!post
 
-  const formRef = useRef<HTMLFormElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [status,           setStatus]       = useState<PostStatus>('te_doen')
@@ -283,7 +282,6 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
   return (
     <AppDrawer open={open} onOpenChange={onOpenChange} title={isEdit ? 'Post bewerken' : 'Nieuwe post maken'}>
       <form
-        ref={formRef}
         onSubmit={handleSubmit}
         onKeyDown={handleKeyDown}
         data-vaul-no-drag
@@ -291,7 +289,7 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
       >
         <AppDrawerHeader>
             <div className="flex items-center gap-2 text-muted-foreground">
-              <SvgIcon name={isEdit ? 'file-text' : 'file-text'} size={14} />
+              <SvgIcon name="file-text" size={14} />
               <span className="text-sm font-medium text-foreground">
                 {isEdit ? 'Post bewerken' : 'Nieuwe post maken'}
               </span>

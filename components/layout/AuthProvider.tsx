@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useAuthStore } from "@/store/auth"
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { setSession, setLoading } = useAuthStore()
+  const { setSession } = useAuthStore()
 
   useEffect(() => {
     const supabase = createClient()
@@ -16,18 +16,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(session)
         })
       }
-      setLoading(false)
     })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      setLoading(false)
     })
 
     return () => subscription.unsubscribe()
-  }, [setSession, setLoading])
+  }, [setSession])
 
   return <>{children}</>
 }

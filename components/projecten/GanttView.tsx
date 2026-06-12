@@ -73,7 +73,7 @@ export function GanttView({ projects, milestones, onDatesChange }: GanttViewProp
     )
   }, [today, offsetMonths])
 
-  const rangeStart = useMemo(() => new Date(months[0].getFullYear(), months[0].getMonth(), 1), [months])
+  const rangeStart = months[0]   // months[0] is al de 1e van de maand om middernacht
   const rangeEnd   = useMemo(() => endOfMonth(months[months.length - 1]), [months])
   const totalMs    = useMemo(() => rangeEnd.getTime() - rangeStart.getTime(), [rangeStart, rangeEnd])
 

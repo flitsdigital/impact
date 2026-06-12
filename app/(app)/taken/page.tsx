@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { TakenModule } from '@/components/taken/TakenModule'
 import type { Project, Task, TaskWithRelations } from '@/types/project'
-import type { TeamMember } from '@/types/team'
 
 export default async function TakenPage() {
   const supabase = await createClient()
@@ -23,11 +22,6 @@ export default async function TakenPage() {
     `)
     .order('volgorde', { ascending: true })
     .order('created_at', { ascending: false })
-
-  const { data: teamMembers } = await supabase
-    .from('profiles')
-    .select('id, full_name, avatar_url, email')
-    .order('full_name')
 
   const projects: Array<Project & { klanten?: { id: string; naam: string } | null }> =
     (rawProjects ?? []).map((p: any) => ({ ...p }))
@@ -66,7 +60,6 @@ export default async function TakenPage() {
     <TakenModule
       projects={projects}
       tasks={tasks}
-      teamMembers={(teamMembers ?? []) as TeamMember[]}
     />
   )
 }

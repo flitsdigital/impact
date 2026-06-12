@@ -290,27 +290,6 @@ export function ProjectDetailModule({
             </button>
           ))}
         </div>
-
-        {/* Right-side tab icons */}
-        <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-fg-3"
-            aria-label="Activiteit"
-            onClick={() => setTab('activiteit')}
-          >
-            <SvgIcon name="message-square" size={14} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-fg-3"
-            aria-label="Weergave wisselen"
-          >
-            <SvgIcon name="layout-grid" size={14} />
-          </Button>
-        </div>
       </div>
 
       {/* ── Tab content ────────────────────────────────────────────────────── */}
