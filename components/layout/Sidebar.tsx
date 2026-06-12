@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { SvgIcon } from "@/components/ui/SvgIcon"
@@ -65,15 +66,45 @@ function NavRow({
 }
 
 function NavGroup({ label, items }: { label: string; items: { href: string; label: string; svgName: string; count?: number; kbds?: string[] }[] }) {
+  const storageKey = `sidebar-group-${label.toLowerCase()}`
+  const [open, setOpen] = useState(true)
+
+  // localStorage pas na mount lezen om hydration-mismatch te voorkomen
+  useEffect(() => {
+    if (localStorage.getItem(storageKey) === "closed") setOpen(false)
+  }, [storageKey])
+
+  function toggle() {
+    setOpen((prev) => {
+      localStorage.setItem(storageKey, prev ? "closed" : "open")
+      return !prev
+    })
+  }
+
   return (
     <div className="flex flex-col gap-0.5">
-      <div className="flex items-center gap-1 px-2 py-1">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex items-center gap-1 px-2 py-1 cursor-pointer rounded-md hover:bg-bg-2 transition-colors"
+      >
         <span className="t-section-label">{label}</span>
-        <SvgIcon name="chevron-down" size={12} className="text-fg-2" />
+        <SvgIcon
+          name="chevron-down"
+          size={12}
+          className={`text-fg-2 transition-transform duration-200 ${open ? "" : "-rotate-90"}`}
+        />
+      </button>
+      <div
+        className={`grid transition-[grid-template-rows] duration-200 ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+      >
+        <div className="flex flex-col gap-0.5 overflow-hidden min-h-0">
+          {items.map((item) => (
+            <NavRow key={item.href} {...item} />
+          ))}
+        </div>
       </div>
-      {items.map((item) => (
-        <NavRow key={item.href} {...item} />
-      ))}
     </div>
   )
 }
