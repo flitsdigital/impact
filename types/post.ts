@@ -41,7 +41,7 @@ export interface Post {
   status: PostStatus
   type: PostType
   caption: string | null
-  media_url: string | null
+  media_urls: string[]         // geordend; volgorde = volgorde van de afbeeldingen
   scheduled_at: string | null  // ISO date "YYYY-MM-DD"
   published_at: string | null
   assignee_id: string | null   // legacy single-assignee column, kept for DB compat

@@ -10,7 +10,7 @@ import {
   AppDrawerFooter,
 } from '@/components/ui/AppDrawer'
 import { PillSelect } from '@/components/ui/PillSelect'
-import { Button }   from '@/components/ui/Button'
+import { Button, buttonVariants }   from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { Textarea } from '@/components/ui/Textarea'
 import { Avatar }   from '@/components/ui/Avatar'
@@ -60,6 +60,15 @@ async function compressImage(file: File, maxBytes = 3_000_000): Promise<File> {
     img.src = URL.createObjectURL(file)
   })
 }
+
+// ─── Media ────────────────────────────────────────────────────────────────────
+// Een geordende lijst: bestaande (opgeslagen) URLs + nieuw gekozen bestanden.
+// Nieuwe bestanden worden altijd achteraan toegevoegd, zodat de zicht-volgorde
+// gelijk is aan de opslag-volgorde (server: behouden URLs eerst, dan uploads).
+
+type MediaItem =
+  | { kind: 'url';  url: string }
+  | { kind: 'file'; file: File; preview: string }
 
 // ─── Assignee picker ──────────────────────────────────────────────────────────
 
@@ -179,9 +188,8 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
   const [date,             setDate]         = useState(defaultDate ?? new Date().toISOString().slice(0, 10))
   const [caption,          setCaption]      = useState('')
   const [assigneeIds,      setAssigneeIds]  = useState<string[]>([])
-  const [rawFile,          setRawFile]      = useState<File | null>(null)
-  const [preview,          setPreview]      = useState<string | null>(null)
-  const [mediaCleared,     setMediaCleared] = useState(false)
+  const [media,            setMedia]        = useState<MediaItem[]>([])
+  const [dragIndex,        setDragIndex]    = useState<number | null>(null)
   const [isPending,        startTransition] = useTransition()
   const [error,            setError]        = useState<string | null>(null)
   const [linkCopied,       setLinkCopied]   = useState(false)
@@ -197,9 +205,7 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
       setDate(post.scheduled_at ?? new Date().toISOString().slice(0, 10))
       setCaption(post.caption ?? '')
       setAssigneeIds((post.assignees ?? []).map((a) => a.id))
-      setPreview(post.media_url ?? null)
-      setRawFile(null)
-      setMediaCleared(false)
+      setMedia((post.media_urls ?? []).map((url) => ({ kind: 'url', url })))
       setError(null)
     }
   }, [open, post])
@@ -214,26 +220,34 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
     if (!open && !post) {
       setStatus('te_doen'); setKlantId('__none__'); setType('foto')
       setDate(defaultDate ?? new Date().toISOString().slice(0, 10))
-      setCaption(''); setAssigneeIds([]); setRawFile(null); setPreview(null)
-      setMediaCleared(false); setError(null)
+      setCaption(''); setAssigneeIds([]); setMedia([]); setError(null)
     }
   }, [open, post, defaultDate])
 
   // ── Media ───────────────────────────────────────────────────────────────────
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setRawFile(file)
-    setPreview(URL.createObjectURL(file))
-    setMediaCleared(false)
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    setMedia((prev) => [
+      ...prev,
+      ...files.map((file) => ({ kind: 'file' as const, file, preview: URL.createObjectURL(file) })),
+    ])
+    if (fileRef.current) fileRef.current.value = ''
   }
 
-  function clearMedia() {
-    setRawFile(null)
-    setPreview(null)
-    setMediaCleared(true)
-    if (fileRef.current) fileRef.current.value = ''
+  function removeMedia(index: number) {
+    setMedia((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  function reorderMedia(from: number, to: number) {
+    if (from === to) return
+    setMedia((prev) => {
+      const next = [...prev]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
   }
 
   // ── Submit ──────────────────────────────────────────────────────────────────
@@ -248,10 +262,13 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
     fd.set('scheduled_at', date)
     fd.set('caption',      caption)
     fd.set('assignee_ids', JSON.stringify(assigneeIds))
-    if (mediaCleared) fd.set('clear_media', '1')
-    if (rawFile) {
-      const compressed = await compressImage(rawFile)
-      fd.set('media', compressed, compressed.name)
+    // Manifest: behoudt exacte volgorde (url = bestaand, null = nieuw bestand).
+    fd.set('media_order', JSON.stringify(media.map((m) => (m.kind === 'url' ? m.url : null))))
+    for (const m of media) {
+      if (m.kind === 'file') {
+        const compressed = await compressImage(m.file)
+        fd.append('media', compressed, compressed.name)
+      }
     }
     startTransition(async () => {
       const result = isEdit
@@ -356,35 +373,60 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
         </AppDrawerMeta>
 
         <AppDrawerBody>
-            {/* Media upload / preview */}
-            {preview ? (
-              <div className="relative rounded-md overflow-hidden border border-border shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt="Preview" className="w-full max-h-52 object-cover" />
-                <button
-                  type="button" onClick={clearMedia}
-                  className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-bg-0/80 text-foreground hover:bg-bg-0 transition-colors"
-                >
-                  <SvgIcon name="x" size={13} />
-                </button>
-                {rawFile && (
-                  <span className="absolute bottom-2 left-2 text-[10px] bg-bg-0/80 rounded px-2 py-0.5 text-muted-foreground">
-                    {rawFile.name} {rawFile.size > 3_000_000 && '(wordt gecomprimeerd)'}
-                  </span>
-                )}
-              </div>
-            ) : (
+            {/* Media upload / preview — geordende lijst */}
+            {media.length === 0 ? (
               <button
                 type="button" onClick={() => fileRef.current?.click()}
                 className="w-full h-[154px] rounded-md bg-secondary flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors shrink-0"
               >
                 <SvgIcon name="upload" size={20} />
                 <span className="text-xs">
-                  {isEdit ? 'Nieuwe afbeelding toevoegen' : 'Voeg een foto toe'}
+                  {isEdit ? 'Afbeeldingen toevoegen' : 'Voeg foto’s toe'}
                 </span>
               </button>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 shrink-0">
+                {media.map((m, i) => (
+                  <div
+                    key={i}
+                    draggable
+                    onDragStart={() => setDragIndex(i)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => { if (dragIndex !== null) reorderMedia(dragIndex, i); setDragIndex(null) }}
+                    onDragEnd={() => setDragIndex(null)}
+                    className={cn(
+                      'relative aspect-square rounded-md overflow-hidden border border-border bg-secondary cursor-move',
+                      dragIndex === i && 'opacity-40',
+                    )}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={m.kind === 'url' ? m.url : m.preview}
+                      alt={`Afbeelding ${i + 1}`}
+                      className="w-full h-full object-cover pointer-events-none"
+                    />
+                    <span className="absolute top-1 left-1 text-[10px] bg-bg-0/80 rounded px-1.5 py-0.5 text-muted-foreground tabular-nums">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <button
+                      type="button" onClick={() => removeMedia(i)}
+                      title="Verwijderen"
+                      className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-bg-0/80 text-foreground hover:bg-bg-0 transition-colors"
+                    >
+                      <SvgIcon name="x" size={12} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button" onClick={() => fileRef.current?.click()}
+                  className="aspect-square rounded-md bg-secondary flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+                >
+                  <SvgIcon name="upload" size={18} />
+                  <span className="text-[10px]">Toevoegen</span>
+                </button>
+              </div>
             )}
-            <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
+            <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
 
             {/* Caption */}
             <Textarea
@@ -401,6 +443,15 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
             <DrawerClose asChild>
               <Button variant="outline" size="sm" type="button">Annuleren</Button>
             </DrawerClose>
+            {isEdit && (post.media_urls?.length ?? 0) > 0 && (
+              <a
+                href={`/api/posts/${post.id}/download`}
+                className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1.5 mr-auto')}
+              >
+                <SvgIcon name="download" size={13} />
+                Download afbeeldingen (.zip)
+              </a>
+            )}
             <Button type="submit" size="sm" disabled={isPending} className="gap-1.5">
               <SvgIcon name="save" size={13} />
               {isPending ? 'Opslaan...' : 'Opslaan'}

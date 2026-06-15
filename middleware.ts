@@ -32,7 +32,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const isAuthRoute    = pathname.startsWith("/login") || pathname.startsWith("/wachtwoord-vergeten")
-  const isPublicRoute  = pathname.startsWith("/preview") || pathname.startsWith("/wachtwoord-herstellen")
+  // /api/assistant heeft eigen auth (gedeeld geheim, server-to-server vanuit n8n).
+  const isPublicRoute  = pathname.startsWith("/preview") || pathname.startsWith("/wachtwoord-herstellen") || pathname.startsWith("/api/assistant")
 
   if (!user && !isAuthRoute && !isPublicRoute) {
     return NextResponse.redirect(new URL("/login", request.url))

@@ -29,6 +29,7 @@ import type { Lead, LeadStatus, LeadContactmoment, LeadDocument, ContactmomentTy
 import { LEAD_COLUMNS, BRON_LABEL, CONTACT_TYPE_CONFIG } from '@/types/lead'
 import {
   updateLead,
+  deleteLead,
   addContactmoment,
   deleteContactmoment,
   addLeadDocument,
@@ -55,6 +56,17 @@ function EditDialog({
 }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+
+  // Bevries de lead-waarden per open-sessie: het uncontrolled formulier mag zijn
+  // defaultValue niet wijzigen zolang het gemonteerd is. lead muteert optimistisch
+  // bij opslaan terwijl de sluit-animatie het formulier nog gemonteerd houdt —
+  // anders triggert dat een base-ui controlled/uncontrolled-waarschuwing.
+  const [formLead, setFormLead] = useState(lead)
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) setFormLead(lead)
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -92,7 +104,7 @@ function EditDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 py-2">
-          <LeadFormFields lead={lead} idPrefix="edit-lead-" />
+          <LeadFormFields lead={formLead} idPrefix="edit-lead-" />
 
           {error && <p className="text-xs text-destructive">{error}</p>}
 
@@ -305,7 +317,21 @@ export function LeadDetailModule({
   const [editOpen, setEditOpen] = useState(false)
   const [bijlageOpen, setBijlageOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [, startTransition] = useTransition()
+
+  async function handleDelete() {
+    setDeleting(true)
+    const res = await deleteLead(lead.id)
+    if (res.error) {
+      toast(res.error)
+      setDeleting(false)
+      return
+    }
+    toast('Lead verwijderd')
+    router.push('/leads')
+  }
 
   // Inline beschrijving (notities-veld) bewerken — zelfde patroon als projectdetail
   const [editingNotities, setEditingNotities] = useState(false)
@@ -363,10 +389,42 @@ export function LeadDetailModule({
           <span className="text-[12px] text-fg-1 font-medium truncate">{lead.bedrijfsnaam}</span>
         </div>
 
-        <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} className="shrink-0">
-          <SvgIcon name="pencil" size={14} className="mr-1.5" />
-          Bewerken
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {deleteConfirm ? (
+            <>
+              <span className="text-[12px] text-fg-2">Zeker weten?</span>
+              <Button
+                onClick={handleDelete}
+                disabled={deleting}
+                variant="ghost"
+                size="sm"
+                className="text-red-400 hover:text-red-300"
+              >
+                {deleting ? 'Verwijderen...' : 'Ja, verwijder'}
+              </Button>
+              <Button onClick={() => setDeleteConfirm(false)} variant="ghost" size="sm">
+                Annuleer
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setDeleteConfirm(true)}
+                className="text-fg-3 hover:text-red-400 hover:bg-red-400/10"
+                aria-label="Lead verwijderen"
+                title="Lead verwijderen"
+              >
+                <SvgIcon name="trash" size={14} />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                <SvgIcon name="pencil" size={14} className="mr-1.5" />
+                Bewerken
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ── Content + sidebar ──────────────────────────────────────────────── */}

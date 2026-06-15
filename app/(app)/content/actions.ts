@@ -10,13 +10,52 @@ function parseAssigneeIds(raw: FormDataEntryValue | null): string[] {
   try { return JSON.parse(raw) as string[] } catch { return [] }
 }
 
+// media_order is een geordend manifest: per slot een bestaande URL (string) of
+// null voor "hier komt een nieuw geüpload bestand". De nieuwe bestanden zitten
+// in de 'media'-velden, in dezelfde volgorde als de null-slots. Zo blijft de
+// exacte (versleepbare) volgorde behouden, ook als oud en nieuw door elkaar staan.
+function parseMediaOrder(raw: FormDataEntryValue | null): (string | null)[] {
+  if (!raw || typeof raw !== 'string') return []
+  try { return JSON.parse(raw) as (string | null)[] } catch { return [] }
+}
+
+// Bouwt de geordende media_urls op volgens het manifest.
+// Gooit een Error met .message bij upload-fouten.
+async function resolveMediaUrls(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  formData: FormData,
+): Promise<string[]> {
+  const order = parseMediaOrder(formData.get('media_order'))
+  const files = formData.getAll('media').filter((f): f is File => f instanceof File && f.size > 0)
+
+  const uploaded: string[] = []
+  for (const file of files) {
+    const ext = file.name.split('.').pop() ?? 'jpg'
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const { error } = await supabase.storage.from('post-media').upload(path, file)
+    if (error) throw new Error(error.message)
+    const { data: { publicUrl } } = supabase.storage.from('post-media').getPublicUrl(path)
+    uploaded.push(publicUrl)
+  }
+
+  let fileIdx = 0
+  const result: string[] = []
+  for (const slot of order) {
+    if (slot === null) { if (fileIdx < uploaded.length) result.push(uploaded[fileIdx++]) }
+    else result.push(slot)
+  }
+  // Veiligheidsnet: eventuele extra uploads zonder slot achteraan toevoegen.
+  while (fileIdx < uploaded.length) result.push(uploaded[fileIdx++])
+  return result
+}
+
 const postSchema = z.object({
   klant_id:     z.string().uuid().nullable().optional(),
   status:       z.enum(['te_doen', 'bezig', 'klaar_voor_feedback', 'akkoord', 'gepost']).default('te_doen'),
   type:         z.enum(['foto', 'video', 'reel', 'carousel']).default('foto'),
   caption:      z.string().nullable().optional(),
   scheduled_at: z.string().nullable().optional(),
-  media_url:    z.string().nullable().optional(),
+  media_urls:   z.array(z.string()).default([]),
 })
 
 // ─── Create post ─────────────────────────────────────────────────────────────
@@ -28,21 +67,9 @@ export async function createPost(
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
-  // Handle optional media upload
-  let media_url: string | null = null
-  const mediaFile = formData.get('media') as File | null
-  if (mediaFile && mediaFile.size > 0) {
-    const ext = mediaFile.name.split('.').pop() ?? 'jpg'
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const { error: uploadError } = await supabase.storage
-      .from('post-media')
-      .upload(path, mediaFile)
-    if (uploadError) return { error: uploadError.message }
-    const { data: { publicUrl } } = supabase.storage
-      .from('post-media')
-      .getPublicUrl(path)
-    media_url = publicUrl
-  }
+  let media_urls: string[]
+  try { media_urls = await resolveMediaUrls(supabase, formData) }
+  catch (e) { return { error: (e as Error).message } }
 
   const rawKlantId = formData.get('klant_id') as string | null
   const raw = {
@@ -51,7 +78,7 @@ export async function createPost(
     type:         formData.get('type') || 'foto',
     caption:      formData.get('caption') || null,
     scheduled_at: formData.get('scheduled_at') || null,
-    media_url,
+    media_urls,
   }
 
   const parsed = postSchema.safeParse(raw)
@@ -95,24 +122,9 @@ export async function updatePost(
   const id = formData.get('id') as string
   if (!id) return { error: 'Geen ID opgegeven' }
 
-  // Handle optional new media upload (or explicit clear)
-  let media_url: string | null | undefined = undefined
-  const mediaFile  = formData.get('media') as File | null
-  const clearMedia = formData.get('clear_media') === '1'
-  if (mediaFile && mediaFile.size > 0) {
-    const ext = mediaFile.name.split('.').pop() ?? 'jpg'
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-    const { error: uploadError } = await supabase.storage
-      .from('post-media')
-      .upload(path, mediaFile)
-    if (uploadError) return { error: uploadError.message }
-    const { data: { publicUrl } } = supabase.storage
-      .from('post-media')
-      .getPublicUrl(path)
-    media_url = publicUrl
-  } else if (clearMedia) {
-    media_url = null
-  }
+  let media_urls: string[]
+  try { media_urls = await resolveMediaUrls(supabase, formData) }
+  catch (e) { return { error: (e as Error).message } }
 
   const rawKlantId2 = formData.get('klant_id') as string | null
   const raw = {
@@ -121,7 +133,7 @@ export async function updatePost(
     type:         formData.get('type') || 'foto',
     caption:      formData.get('caption') || null,
     scheduled_at: formData.get('scheduled_at') || null,
-    ...(media_url !== undefined && { media_url }),
+    media_urls,
   }
 
   const parsed = postSchema.safeParse(raw)

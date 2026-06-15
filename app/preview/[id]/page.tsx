@@ -60,14 +60,15 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
       {/* ── Card ────────────────────────────────────────────────── */}
       <div className="w-full max-w-[560px] mt-8 mx-4 bg-[#0F0F10] border border-[#1D1E1F] rounded-[14px] overflow-hidden">
         {/* Media */}
-        {post.media_url && (
+        {(post.media_urls ?? []).map((url: string, i: number) => (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={post.media_url}
-            alt="Post media"
+            key={i}
+            src={url}
+            alt={`Post media ${i + 1}`}
             className="w-full block max-h-[420px] object-cover"
           />
-        )}
+        ))}
 
         {/* Body */}
         <div className="px-6 py-5">

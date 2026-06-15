@@ -5,7 +5,7 @@ const CUSTOM_ICONS = [
   'arrows-sort', 'bolt', 'calendar', 'caret-down', 'chart-gantt', 'chart-kanban',
   'check', 'chevron-left', 'chevron-right', 'chevrons-left',
   'circle', 'circle-check', 'circle-check-stroke', 'circle-dashed', 'circle-notch',
-  'coin-vertical', 'ellipsis', 'file-invoice-dollar', 'filter', 'grid-2',
+  'coin-vertical', 'download', 'ellipsis', 'file-invoice-dollar', 'filter', 'grid-2',
   'image-square', 'inbox', 'layout-columns', 'layout-grid', 'layout-rows',
   'layers', 'list-check', 'list-check-1', 'magnifying-glass', 'plus',
   'road', 'scrubber', 'signal-bars', 'text-size', 'text-size-1',
