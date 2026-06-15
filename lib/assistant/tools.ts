@@ -223,5 +223,159 @@ export function buildTools(ctx: ToolContext): AssistantTool[] {
         return `status → ${a.status}`
       },
     ),
+
+    // ── A. Inzicht / vragen (alleen-lezen) ─────────────────────────────────────
+    t(
+      'find_stale_leads',
+      'Geef leads die al een tijd geen contact hebben gehad. Gebruik dit bij vragen als "welke leads heb ik niet meer gesproken?".',
+      obj({ days: { type: 'number', description: 'aantal dagen zonder contact; standaard 7' } }),
+      async (a) => JSON.stringify(await db.findStaleLeads(Number(a.days) || 7)),
+    ),
+    t(
+      'get_agenda',
+      'Wat staat er gepland: posts (op datum) + taken (met deadline) voor vandaag of deze week.',
+      obj({ period: enumStr(['vandaag', 'deze_week']) }, ['period']),
+      async (a) => JSON.stringify(await db.getAgenda(a.period)),
+    ),
+    t(
+      'get_pipeline_value',
+      'Totale pipeline-waarde van open leads, per status en totaal.',
+      obj({}),
+      async () => JSON.stringify(await db.getPipelineValue()),
+    ),
+    t(
+      'get_open_tasks',
+      'Open taken (niet klaar). Zet only_overdue op true voor alleen taken over hun deadline.',
+      obj({ only_overdue: { type: 'boolean', description: 'alleen taken over deadline' } }),
+      async (a) => JSON.stringify(await db.getOpenTasks(a.only_overdue === true)),
+    ),
+    t(
+      'get_open_invoices',
+      'Openstaande facturen (gepland/verzonden/te laat) met totaalbedrag.',
+      obj({}),
+      async () => JSON.stringify(await db.getOpenInvoices()),
+    ),
+
+    // ── B. CRUD afmaken ────────────────────────────────────────────────────────
+    t(
+      'create_klant',
+      'Maak een nieuwe klant aan.',
+      obj(
+        {
+          naam: str('naam van de klant'),
+          type: enumStr(['recurring', 'project', 'one-off'], 'optioneel'),
+          contactpersoon: str('optioneel'),
+          email: str('optioneel'),
+          telefoon: str('optioneel'),
+        },
+        ['naam'],
+      ),
+      async (a) => {
+        await db.createKlant(a as any)
+        return `klant "${a.naam}" aangemaakt`
+      },
+    ),
+    t(
+      'update_klant',
+      'Werk velden van een klant bij (alleen de meegegeven velden).',
+      obj({
+        klant_id: str('id van de klant'),
+        status: enumStr(['actief', 'gepauzeerd', 'gearchiveerd'], 'optioneel'),
+        contactpersoon: str('optioneel'),
+        email: str('optioneel'),
+        telefoon: str('optioneel'),
+        volgende_factuur: str('YYYY-MM-DD, optioneel'),
+      }, ['klant_id']),
+      async (a) => {
+        await db.updateKlant(a.klant_id, {
+          status: a.status, contactpersoon: a.contactpersoon, email: a.email,
+          telefoon: a.telefoon, volgende_factuur: a.volgende_factuur,
+        })
+        return 'klant bijgewerkt'
+      },
+    ),
+    t(
+      'update_lead',
+      'Werk velden van een lead bij (waarde, contactpersoon, e-mail, telefoon).',
+      obj({
+        lead_id: str('id van de lead'),
+        waarde: { type: 'number', description: 'dealwaarde in euro, optioneel' },
+        contactpersoon: str('optioneel'),
+        email: str('optioneel'),
+        telefoon: str('optioneel'),
+      }, ['lead_id']),
+      async (a) => {
+        await db.updateLead(a.lead_id, {
+          waarde: a.waarde, contactpersoon: a.contactpersoon, email: a.email, telefoon: a.telefoon,
+        })
+        return 'lead bijgewerkt'
+      },
+    ),
+    t(
+      'create_project',
+      'Maak een nieuw project aan (optioneel gekoppeld aan een klant).',
+      obj({ naam: str('projectnaam'), klant_id: str('optioneel'), deadline: str('YYYY-MM-DD, optioneel') }, ['naam']),
+      async (a) => {
+        await db.createProject({ naam: a.naam, klantId: a.klant_id ?? null, deadline: a.deadline ?? null })
+        return `project "${a.naam}" aangemaakt`
+      },
+    ),
+    t(
+      'set_project_status',
+      'Wijzig de status van een project.',
+      obj({ project_id: str('id van het project'), status: enumStr(['gepland', 'bezig', 'feedback', 'klaar', 'gearchiveerd']) }, ['project_id', 'status']),
+      async (a) => {
+        await db.setProjectStatus(a.project_id, a.status)
+        return `status → ${a.status}`
+      },
+    ),
+    t(
+      'update_task',
+      'Werk een taak bij: deadline en/of prioriteit.',
+      obj({
+        task_id: str('id van de taak'),
+        deadline: str('YYYY-MM-DD, optioneel'),
+        prioriteit: enumStr(['urgent', 'hoog', 'normaal', 'laag'], 'optioneel'),
+      }, ['task_id']),
+      async (a) => {
+        await db.updateTask(a.task_id, { deadline: a.deadline, prioriteit: a.prioriteit })
+        return 'taak bijgewerkt'
+      },
+    ),
+    t(
+      'add_task_comment',
+      'Plaats een opmerking bij een taak.',
+      obj({ task_id: str('id van de taak'), inhoud: str('de opmerking') }, ['task_id', 'inhoud']),
+      async (a) => {
+        await db.addTaskComment({ profileId: ctx.profileId, taskId: a.task_id, inhoud: a.inhoud })
+        return 'opmerking geplaatst'
+      },
+    ),
+
+    // ── C. Team / toewijzen ────────────────────────────────────────────────────
+    t(
+      'find_teammember',
+      'Zoek een teamlid op naam of e-mail. Vind het profile_id vóór assign_task of assign_post.',
+      obj({ query: str('naam of deel van de naam') }, ['query']),
+      async (a) => JSON.stringify(await db.searchTeam(a.query)),
+    ),
+    t(
+      'assign_task',
+      'Wijs een taak toe aan een teamlid.',
+      obj({ task_id: str('id van de taak'), profile_id: str('id van het teamlid') }, ['task_id', 'profile_id']),
+      async (a) => {
+        await db.assignTask(a.task_id, a.profile_id)
+        return 'taak toegewezen'
+      },
+    ),
+    t(
+      'assign_post',
+      'Wijs een post toe aan een teamlid.',
+      obj({ post_id: str('id van de post'), profile_id: str('id van het teamlid') }, ['post_id', 'profile_id']),
+      async (a) => {
+        await db.assignPost(a.post_id, a.profile_id)
+        return 'post toegewezen'
+      },
+    ),
   ]
 }

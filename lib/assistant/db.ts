@@ -226,3 +226,189 @@ export async function createTask(input: {
 export async function setTaskStatus(taskId: string, status: string) {
   return unwrap(db().from('tasks').update({ status }).eq('id', taskId).select('id').single())
 }
+
+// ─── Datum-helpers ──────────────────────────────────────────────────────────
+
+function today(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+function addDays(iso: string, n: number): string {
+  const d = new Date(iso + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+function weekRange(): { start: string; end: string } {
+  const t = today()
+  const dow = (new Date(t + 'T00:00:00Z').getUTCDay() + 6) % 7 // ma=0
+  const start = addDays(t, -dow)
+  return { start, end: addDays(start, 6) }
+}
+
+// ─── A. Inzicht / vraag-tools (alleen-lezen) ────────────────────────────────
+
+export async function findStaleLeads(days: number) {
+  const leads = (await unwrap(
+    db().from('leads').select('id, bedrijfsnaam, status').in('status', ['nieuw', 'contact', 'offerte']),
+  )) as { id: string; bedrijfsnaam: string; status: string }[]
+  const cms = (await unwrap(
+    db().from('lead_contactmomenten').select('lead_id, datum'),
+  )) as { lead_id: string; datum: string }[]
+
+  const last = new Map<string, string>()
+  for (const c of cms) {
+    const prev = last.get(c.lead_id)
+    if (!prev || c.datum > prev) last.set(c.lead_id, c.datum)
+  }
+  const cutoff = addDays(today(), -days)
+  return leads
+    .map((l) => ({ bedrijfsnaam: l.bedrijfsnaam, status: l.status, laatste_contact: last.get(l.id) ?? null }))
+    .filter((l) => l.laatste_contact === null || l.laatste_contact < cutoff)
+}
+
+export async function getAgenda(period: 'vandaag' | 'deze_week') {
+  const range = period === 'vandaag' ? { start: today(), end: today() } : weekRange()
+  const posts = await unwrap(
+    db().from('posts').select('caption, type, status, scheduled_at, klanten(naam)')
+      .gte('scheduled_at', range.start).lte('scheduled_at', range.end).order('scheduled_at'),
+  )
+  const taken = await unwrap(
+    db().from('tasks').select('titel, status, deadline, projects(naam)')
+      .neq('status', 'klaar').gte('deadline', range.start).lte('deadline', range.end).order('deadline'),
+  )
+  return { periode: period, posts, taken }
+}
+
+export async function getPipelineValue() {
+  const rows = (await unwrap(
+    db().from('leads').select('status, waarde').in('status', ['nieuw', 'contact', 'offerte']),
+  )) as { status: string; waarde: number | null }[]
+  const perStatus: Record<string, number> = {}
+  let totaal = 0
+  for (const r of rows) {
+    const w = Number(r.waarde ?? 0)
+    perStatus[r.status] = (perStatus[r.status] ?? 0) + w
+    totaal += w
+  }
+  return { per_status: perStatus, totaal }
+}
+
+export async function getOpenTasks(onlyOverdue: boolean) {
+  let q = db().from('tasks').select('titel, status, deadline, projects(naam)').neq('status', 'klaar')
+  if (onlyOverdue) q = q.lt('deadline', today())
+  return unwrap(q.order('deadline'))
+}
+
+export async function getOpenInvoices() {
+  const rows = (await unwrap(
+    db().from('klant_facturen').select('label, amount, status, due_date, klanten(naam)')
+      .in('status', ['planned', 'sent', 'overdue']).order('due_date'),
+  )) as { amount: number | null }[]
+  const totaal_open = rows.reduce((s, r) => s + Number(r.amount ?? 0), 0)
+  return { facturen: rows, totaal_open }
+}
+
+// ─── B. CRUD afmaken ────────────────────────────────────────────────────────
+
+export async function createKlant(input: {
+  naam: string
+  type?: string | null
+  contactpersoon?: string | null
+  email?: string | null
+  telefoon?: string | null
+}) {
+  return unwrap(
+    db().from('klanten').insert({
+      naam: input.naam,
+      type: input.type ?? 'one-off',
+      contactpersoon: input.contactpersoon ?? null,
+      email: input.email ?? null,
+      telefoon: input.telefoon ?? null,
+      status: 'actief',
+    }).select('id').single(),
+  )
+}
+
+// Bouwt een update-object met alleen de meegegeven velden.
+function defined<T extends object>(o: T): Partial<T> {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>
+}
+
+export async function updateKlant(klantId: string, fields: {
+  status?: string; contactpersoon?: string; email?: string; telefoon?: string; volgende_factuur?: string
+}) {
+  return unwrap(db().from('klanten').update(defined(fields)).eq('id', klantId).select('id').single())
+}
+
+export async function updateLead(leadId: string, fields: {
+  waarde?: number; contactpersoon?: string; email?: string; telefoon?: string
+}) {
+  return unwrap(db().from('leads').update(defined(fields)).eq('id', leadId).select('id').single())
+}
+
+export async function createProject(input: { naam: string; klantId?: string | null; deadline?: string | null }) {
+  return unwrap(
+    db().from('projects').insert({
+      naam: input.naam,
+      klant_id: input.klantId ?? null,
+      deadline: input.deadline ?? null,
+      status: 'gepland',
+    }).select('id').single(),
+  )
+}
+
+export async function setProjectStatus(projectId: string, status: string) {
+  return unwrap(db().from('projects').update({ status }).eq('id', projectId).select('id').single())
+}
+
+export async function updateTask(taskId: string, fields: { deadline?: string; prioriteit?: string }) {
+  return unwrap(db().from('tasks').update(defined(fields)).eq('id', taskId).select('id').single())
+}
+
+export async function addTaskComment(input: { profileId: string; taskId: string; inhoud: string }) {
+  return unwrap(
+    db().from('task_comments').insert({ task_id: input.taskId, author_id: input.profileId, inhoud: input.inhoud })
+      .select('id').single(),
+  )
+}
+
+// ─── C. Team / toewijzen ────────────────────────────────────────────────────
+
+export async function searchTeam(query: string) {
+  const rows = await unwrap(db().from('profiles').select('id, full_name, email').limit(200))
+  return rankMatches(query, rows as any[], (p) => `${p.full_name ?? ''} ${p.email ?? ''}`)
+}
+
+export async function assignTask(taskId: string, profileId: string) {
+  return unwrap(
+    db().from('task_assignees').upsert({ task_id: taskId, profile_id: profileId }, { onConflict: 'task_id,profile_id' })
+      .select('task_id').single(),
+  )
+}
+
+export async function assignPost(postId: string, profileId: string) {
+  return unwrap(
+    db().from('post_assignees').upsert({ post_id: postId, user_id: profileId }, { onConflict: 'post_id,user_id' })
+      .select('post_id').single(),
+  )
+}
+
+// ─── E. Dagelijkse briefing ─────────────────────────────────────────────────
+
+export async function buildBriefing(): Promise<string> {
+  const stale = await findStaleLeads(7)
+  const feedback = (await unwrap(
+    db().from('posts').select('caption, klanten(naam)').eq('status', 'klaar_voor_feedback'),
+  )) as { caption: string | null; klanten?: { naam?: string } | null }[]
+  const overdue = (await unwrap(
+    db().from('tasks').select('titel, deadline, projects(naam)').neq('status', 'klaar').lt('deadline', today()),
+  )) as { titel: string; deadline: string; projects?: { naam?: string } | null }[]
+
+  const lines: string[] = [`☀️ Goedemorgen! Stand van zaken (${today()}):`, '']
+  lines.push(`📞 Leads >7 dagen geen contact: ${stale.length}`)
+  for (const l of stale.slice(0, 8)) lines.push(`  • ${l.bedrijfsnaam} (${l.status}, laatst: ${l.laatste_contact ?? 'nooit'})`)
+  lines.push('', `🖼️ Posts wachten op feedback: ${feedback.length}`)
+  for (const p of feedback.slice(0, 8)) lines.push(`  • ${p.klanten?.naam ?? 'Geen klant'}: ${(p.caption ?? '').slice(0, 40) || '(geen caption)'}`)
+  lines.push('', `⏰ Taken over deadline: ${overdue.length}`)
+  for (const t of overdue.slice(0, 8)) lines.push(`  • ${t.titel} (${t.projects?.naam ?? '—'}, ${t.deadline})`)
+  return lines.join('\n')
+}
