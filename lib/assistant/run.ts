@@ -36,16 +36,25 @@ type ChatMessage = {
   tool_call_id?: string
 }
 
-async function chat(messages: ChatMessage[], tools: unknown[]): Promise<ChatMessage> {
+async function chat(messages: ChatMessage[], tools: unknown[], attempt = 0): Promise<ChatMessage> {
+  const temperature = [0, 0.5, 0.9][attempt] ?? 0.9
   const res = await fetch(`${BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       authorization: `Bearer ${process.env.AI_API_KEY}`,
     },
-    body: JSON.stringify({ model: MODEL, messages, tools, tool_choice: 'auto', temperature: 0 }),
+    body: JSON.stringify({ model: MODEL, messages, tools, tool_choice: 'auto', temperature }),
   })
-  if (!res.ok) throw new Error(`AI-provider ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  if (!res.ok) {
+    const body = await res.text()
+    // Groq mislukt soms in het formatteren van een tool-call (tool_use_failed).
+    // Op temp 0 zou een retry identiek falen, dus we proberen met meer variatie.
+    if (res.status === 400 && body.includes('tool_use_failed') && attempt < 2) {
+      return chat(messages, tools, attempt + 1)
+    }
+    throw new Error(`AI-provider ${res.status}: ${body.slice(0, 200)}`)
+  }
   const data = await res.json()
   return data.choices[0].message as ChatMessage
 }
