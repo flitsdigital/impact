@@ -77,6 +77,26 @@ export async function setLeadStatus(leadId: string, status: string) {
   return unwrap(db().from('leads').update({ status }).eq('id', leadId).select('id').single())
 }
 
+export async function createLead(input: {
+  bedrijfsnaam: string
+  contactpersoon?: string | null
+  email?: string | null
+  telefoon?: string | null
+  notities?: string | null
+}) {
+  return unwrap(
+    db().from('leads').insert({
+      bedrijfsnaam: input.bedrijfsnaam,
+      contactpersoon: input.contactpersoon ?? null,
+      email: input.email ?? null,
+      telefoon: input.telefoon ?? null,
+      notities: input.notities ?? null,
+      bron: 'overig',
+      status: 'nieuw',
+    }).select('id').single(),
+  )
+}
+
 // ─── Klanten ────────────────────────────────────────────────────────────────
 
 export async function searchKlanten(query: string) {

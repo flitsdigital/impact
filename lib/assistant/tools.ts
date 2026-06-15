@@ -90,6 +90,30 @@ export function buildTools(ctx: ToolContext): AssistantTool[] {
         return `status → ${a.status}`
       },
     ),
+    t(
+      'create_lead',
+      'Maak een nieuwe lead aan. Gebruik dit als find_lead niets vond en de gebruiker duidelijk een nieuwe lead wil aanmaken.',
+      obj(
+        {
+          bedrijfsnaam: str('bedrijfs- of leadnaam'),
+          contactpersoon: str('contactpersoon (optioneel)'),
+          email: str('e-mail (optioneel)'),
+          telefoon: str('telefoon (optioneel)'),
+          notities: str('notitie (optioneel)'),
+        },
+        ['bedrijfsnaam'],
+      ),
+      async (a) => {
+        await db.createLead({
+          bedrijfsnaam: a.bedrijfsnaam,
+          contactpersoon: a.contactpersoon ?? null,
+          email: a.email ?? null,
+          telefoon: a.telefoon ?? null,
+          notities: a.notities ?? null,
+        })
+        return `lead "${a.bedrijfsnaam}" aangemaakt`
+      },
+    ),
 
     // ── Klanten ──────────────────────────────────────────────────────────────
     t(
