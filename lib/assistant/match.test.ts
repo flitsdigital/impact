@@ -11,9 +11,14 @@ describe('scoreMatch', () => {
   it('scores exact > startsWith > includes > token-overlap > none', () => {
     expect(scoreMatch('hout', 'hout')).toBe(1)
     expect(scoreMatch('hout', 'Hout BV')).toBe(0.9)
-    expect(scoreMatch('hout', 'Jan Hout Montage')).toBe(0.7)
+    expect(scoreMatch('hout', 'Jan Hout Montage')).toBe(0.8)
     expect(scoreMatch('jan hout', 'hout bv')).toBeCloseTo(0.3) // 1/2 tokens * 0.6
     expect(scoreMatch('xyz', 'Hout BV')).toBe(0)
+  })
+
+  it('is ongevoelig voor spaties/leestekens (dictatie)', () => {
+    expect(scoreMatch('private fun', 'PrivateFun')).toBe(0.97)
+    expect(scoreMatch('m. peters montage', 'M Peters Montage')).toBe(0.97)
   })
 })
 
