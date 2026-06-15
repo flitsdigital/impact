@@ -1,4 +1,5 @@
 import { buildTools } from './tools'
+import { getRecentHistory } from './db'
 
 // Provider-agnostisch via de OpenAI-compatibele chat-API. Standaard Groq (gratis);
 // instelbaar via env voor Gemini of OpenAI:
@@ -15,7 +16,8 @@ function systemPrompt(userName: string, today: string): string {
     'Werkwijze:',
     '- Begrijp wat de gebruiker wil en gebruik de tools om het uit te voeren.',
     '- Zoek altijd eerst de juiste entiteit op met een find_*-tool voordat je een actie uitvoert.',
-    '- Geeft een find_*-tool meerdere kandidaten terug? Voer dan NIETS uit, maar vraag de gebruiker welke hij bedoelt.',
+    '- Je krijgt de recente gesprekgeschiedenis mee; gebruik die context (bv. "haar", "de tweede", "dat project" = wat eerder genoemd is).',
+    '- Geeft een find_*-tool meerdere kandidaten terug? Voer dan NIETS uit, maar vraag welke hij bedoelt — noem daarbij de namen van de kandidaten, zodat een kort vervolgantwoord ("de tweede") duidelijk is.',
     '- Vindt een find_*-tool niets en wil de gebruiker duidelijk iets nieuws aanmaken? Gebruik dan de juiste create-tool (bv. create_lead).',
     '- Beloof NOOIT een actie die je niet met een tool kunt uitvoeren. Roep de tool aan en bevestig pas daarna; kun je iets echt niet, zeg dat eerlijk.',
     '- Lichte acties (contactmoment, notitie, taak, statuswijziging, nieuwe lead) voer je direct uit.',
@@ -77,8 +79,14 @@ export async function runAssistant(input: {
     function: { name: t.name, description: t.description, parameters: t.parameters },
   }))
 
+  // Gespreksgeheugen: recente beurten (15 min / 5) als mini-gesprek vóór het nieuwe bericht.
+  const history = await getRecentHistory(input.profileId, { withinMinutes: 15, limit: 5 })
   const messages: ChatMessage[] = [
     { role: 'system', content: systemPrompt(input.profileName, input.today) },
+    ...history.flatMap((h): ChatMessage[] => [
+      { role: 'user', content: h.input_text },
+      { role: 'assistant', content: h.reply_text },
+    ]),
     { role: 'user', content: input.text },
   ]
 

@@ -32,6 +32,30 @@ export async function getProfileName(profileId: string): Promise<string | null> 
   return (data as { full_name: string | null } | null)?.full_name ?? null
 }
 
+// Recente beurten voor gespreksgeheugen: zelfde gebruiker, binnen het tijdvenster,
+// max N, chronologisch (oudste eerst). Foutbeurten worden overgeslagen zodat ze de
+// context niet vervuilen.
+export async function getRecentHistory(
+  profileId: string,
+  opts: { withinMinutes?: number; limit?: number } = {},
+): Promise<{ input_text: string; reply_text: string }[]> {
+  const { withinMinutes = 15, limit = 5 } = opts
+  const sinceIso = new Date(Date.now() - withinMinutes * 60_000).toISOString()
+  const data = await unwrap(
+    db()
+      .from('assistant_log')
+      .select('input_text, reply_text')
+      .eq('profile_id', profileId)
+      .gte('created_at', sinceIso)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+  )
+  return (data as { input_text: string; reply_text: string | null }[])
+    .reverse()
+    .filter((r): r is { input_text: string; reply_text: string } =>
+      !!r.reply_text && !r.reply_text.startsWith('ERROR:') && !r.reply_text.startsWith('Er ging iets mis'))
+}
+
 export async function logInteraction(input: {
   profileId: string | null
   inputText: string
