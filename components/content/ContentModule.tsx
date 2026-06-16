@@ -314,7 +314,7 @@ function MaandView({ posts, currentDate, onAdd, drag, onEdit }: {
                       )}
                     >
                       <StatusIcon status={p.status} size={10} />
-                      <span className="text-xs truncate">{p.klant_naam ?? '—'}</span>
+                      <span className="text-sm font-medium truncate">{p.klant_naam ?? '—'}</span>
                     </div>
                   ))}
                   {overflow > 0 && (
