@@ -11,6 +11,13 @@ const CUSTOM_ICONS = [
   'road', 'scrubber', 'signal-bars', 'text-size', 'text-size-1',
   'triangle-exclamation', 'user-clock', 'user-plus', 'user-plus-1', 'users',
   'video',
+  // Voorheen placeholders, nu custom ontworpen:
+  'archive', 'arrow-left', 'badge-check', 'check-square', 'chevron-down',
+  'chevron-up', 'chevrons-right', 'circle-pause', 'clock', 'corner-down-right',
+  'external-link', 'file-plus', 'file-text', 'folder-open', 'link',
+  'list', 'log-out', 'map', 'message-square', 'pencil',
+  'refresh', 'save', 'settings', 'smile', 'star',
+  'table', 'trash', 'upload', 'user', 'x',
 ]
 
 /**
@@ -21,14 +28,7 @@ const CUSTOM_ICONS = [
  * → Heb je een eigen SVG geüpload? Haal de naam dan uit deze set, dan krijgt
  *   het icoon weer zijn normale (currentColor) kleur.
  */
-const PLACEHOLDER = new Set([
-  'archive', 'arrow-left', 'badge-check', 'check-square', 'chevron-down',
-  'chevron-up', 'chevrons-right', 'circle-pause', 'clock', 'corner-down-right',
-  'external-link', 'file-plus', 'file-text', 'folder-open', 'link',
-  'list', 'log-out', 'map', 'message-square', 'pencil',
-  'refresh', 'save', 'settings', 'smile', 'star',
-  'table', 'trash', 'upload', 'user', 'x',
-])
+const PLACEHOLDER = new Set<string>([])
 
 // Elke bestandsnaam (zonder .svg) die in /public/icons bestaat
 const AVAILABLE = new Set([...CUSTOM_ICONS, ...PLACEHOLDER])
