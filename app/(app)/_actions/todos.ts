@@ -36,10 +36,11 @@ export async function getTodos(): Promise<TodoWithAssignees[]> {
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return [] }
   // RLS filtert al op owner-of-assignee.
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .select(SELECT)
     .order('created_at', { ascending: false })
+  if (error) console.error('[getTodos] error:', JSON.stringify(error))
   return (data ?? []) as TodoWithAssignees[]
 }
 

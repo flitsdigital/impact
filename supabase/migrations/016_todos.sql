@@ -5,6 +5,11 @@
 -- NB: Er bestond al een prototype-tabel `todos` (0 rijen, ander schema).
 --     Die wordt hier vervangen door het definitieve schema.
 
+-- Drop beide tabellen vóór recreate. Anders: `drop todos cascade` verwijdert de
+-- FK todo_assignees→todos maar laat de tabel staan, en een latere
+-- `create table if not exists todo_assignees` herstelt die FK niet → PostgREST
+-- kan de embed niet vinden ("Could not find a relationship … in the schema cache").
+drop table if exists public.todo_assignees cascade;
 drop table if exists public.todos cascade;
 
 create table public.todos (
@@ -21,7 +26,7 @@ create table public.todos (
   updated_at  timestamptz not null default now()
 );
 
-create table if not exists public.todo_assignees (
+create table public.todo_assignees (
   todo_id     uuid not null references public.todos(id)    on delete cascade,
   profile_id  uuid not null references public.profiles(id) on delete cascade,
   primary key (todo_id, profile_id)
