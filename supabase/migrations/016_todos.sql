@@ -33,21 +33,31 @@ create index if not exists todo_assignees_prof_idx on public.todo_assignees(prof
 alter table public.todos          enable row level security;
 alter table public.todo_assignees enable row level security;
 
+-- Breekt de RLS-recursie todos <-> todo_assignees: deze SECURITY DEFINER functie
+-- leest todo_assignees zonder RLS, zodat de todos-policy de todo_assignees-policy
+-- niet triggert (zonder dit: "infinite recursion detected in policy").
+create or replace function public.is_todo_assignee(_todo_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.todo_assignees
+    where todo_id = _todo_id and profile_id = auth.uid()
+  );
+$$;
+
 create policy "todos select" on public.todos for select to authenticated
-  using ( user_id = auth.uid()
-          or exists (select 1 from public.todo_assignees a
-                     where a.todo_id = todos.id and a.profile_id = auth.uid()) );
+  using ( user_id = auth.uid() or public.is_todo_assignee(id) );
 
 create policy "todos insert" on public.todos for insert to authenticated
   with check ( user_id = auth.uid() );
 
 create policy "todos update" on public.todos for update to authenticated
-  using ( user_id = auth.uid()
-          or exists (select 1 from public.todo_assignees a
-                     where a.todo_id = todos.id and a.profile_id = auth.uid()) )
-  with check ( user_id = auth.uid()
-               or exists (select 1 from public.todo_assignees a
-                          where a.todo_id = todos.id and a.profile_id = auth.uid()) );
+  using ( user_id = auth.uid() or public.is_todo_assignee(id) )
+  with check ( user_id = auth.uid() or public.is_todo_assignee(id) );
 
 create policy "todos delete" on public.todos for delete to authenticated
   using ( user_id = auth.uid() );
