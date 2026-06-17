@@ -119,6 +119,11 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `KanbanBoard` (taak-adapter) | `components/projecten/KanbanBoard` | Dunne adapter: KANBAN_COLUMNS + TaakKaart op het generieke bord |
 | `DocumentIcon` | `components/ui/DocumentIcon` | Bijlage-icoon: Google-producticoon/favicon voor links, file-icoon voor bestanden |
 | `BijlageModal` | `components/ui/BijlageModal` | Generieke bijlagen-modal (link + PDF-upload); entiteit-acties via props (`onAddDocument`, `onUploadFile`, `onDeleteDocument`, `makeDocument`) — gebruikt door project- én lead-detail |
+| `DateShortcutsPicker` | `components/todos/DateShortcutsPicker` | Datum-picker: snelkoppelingen + kalender in een popover (todo-module) |
+| `PriorityFlags` | `components/todos/PriorityFlags` | Prioriteit zetten met inline flags; voed met `PRIORITY_CONFIG`/`PRIORITY_ICON` |
+| `AssigneeDropdown` | `components/todos/AssigneeDropdown` | Teamleden toewijzen (multi-select) met avatars |
+| `TodoRow` | `components/todos/TodoRow` | Persoonlijke-todo-rij (variant B) met inline pickers |
+| `TakenDrawer` | `components/todos/TakenDrawer` | Globale "Mijn taken"-drawer (quick-add + lijst); open via `useTakenStore` / ⌘⇧T |
 
 ### Status-configs (bron van waarheid)
 
