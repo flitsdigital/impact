@@ -53,20 +53,20 @@ export function TakenDrawer() {
       </AppDrawerHeader>
 
       <AppDrawerBody>
-        {/* Quick-add */}
-        <div className="rounded-lg border border-border-subtle bg-bg-2 p-3" data-vaul-no-drag>
+        {/* Quick-add — C2: alles op één regel, Enter voegt toe */}
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border-subtle bg-bg-2 px-3 py-2" data-vaul-no-drag>
+          <span className="grid size-4 shrink-0 place-content-center rounded-full border border-border-strong" />
           <input
             value={titel}
             onChange={(e) => setTitel(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
             placeholder="Nieuwe taak…"
-            className="w-full bg-transparent text-[15px] text-fg-1 outline-none placeholder:text-fg-3"
+            className="min-w-[8rem] flex-1 bg-transparent text-[14px] text-fg-1 outline-none placeholder:text-fg-3"
           />
-          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <DateShortcutsPicker value={deadline} onChange={setDeadline} />
             <PriorityFlags value={prioriteit} onChange={setPrioriteit} />
             <AssigneeDropdown value={assignees} team={team} onToggle={toggleDraftAssignee} />
-            <Button size="sm" className="ml-auto" disabled={!titel.trim()} onClick={submit}>Toevoegen</Button>
           </div>
         </div>
 
