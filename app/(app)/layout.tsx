@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/layout/Sidebar"
 import { TopBar } from "@/components/layout/TopBar"
 import { useSidebarStore } from "@/store/sidebar"
 import { SvgIcon } from "@/components/ui/SvgIcon"
+import { TakenDrawer } from "@/components/todos/TakenDrawer"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { collapsed, toggle } = useSidebarStore()
@@ -45,6 +46,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+
+      <TakenDrawer />
     </div>
   )
 }
