@@ -107,7 +107,12 @@ export async function setAssignees(id: string, profileIds: string[]): Promise<{ 
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
-  if (profileIds.length === 0) {
+  // Valideer als UUIDs — dit is ook de enige plek met een handgebouwde filterstring.
+  const parsed = z.array(z.string().uuid()).safeParse(profileIds)
+  if (!parsed.success) return { error: 'Ongeldige toewijzing' }
+  const ids = parsed.data
+
+  if (ids.length === 0) {
     const { error } = await supabase.from('todo_assignees').delete().eq('todo_id', id)
     return error ? { error: error.message } : {}
   }
@@ -115,7 +120,7 @@ export async function setAssignees(id: string, profileIds: string[]): Promise<{ 
   // Upsert de nieuwe set (PK = todo_id+profile_id, dus dubbele zijn no-ops)…
   const { error: insErr } = await supabase
     .from('todo_assignees')
-    .upsert(profileIds.map((profile_id) => ({ todo_id: id, profile_id })), { onConflict: 'todo_id,profile_id' })
+    .upsert(ids.map((profile_id) => ({ todo_id: id, profile_id })), { onConflict: 'todo_id,profile_id' })
   if (insErr) return { error: insErr.message }
 
   // …en verwijder wie er niet meer bij hoort. Pas ná de geslaagde insert, zodat
@@ -124,7 +129,7 @@ export async function setAssignees(id: string, profileIds: string[]): Promise<{ 
     .from('todo_assignees')
     .delete()
     .eq('todo_id', id)
-    .not('profile_id', 'in', `(${profileIds.join(',')})`)
+    .not('profile_id', 'in', `(${ids.join(',')})`)
   return delErr ? { error: delErr.message } : {}
 }
 
