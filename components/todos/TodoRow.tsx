@@ -2,7 +2,6 @@
 
 import { cn } from '@/lib/utils'
 import { SvgIcon } from '@/components/ui/SvgIcon'
-import { AvatarStack } from '@/components/ui/AvatarStack'
 import { DateShortcutsPicker } from '@/components/todos/DateShortcutsPicker'
 import { PriorityFlags } from '@/components/todos/PriorityFlags'
 import { AssigneeDropdown } from '@/components/todos/AssigneeDropdown'
@@ -42,12 +41,6 @@ export function TodoRow({
             team={team}
             onToggle={onAssignToggle}
           />
-          {todo.assignees.length > 0 && (
-            <AvatarStack
-              people={todo.assignees.map((a) => ({ key: a.profile_id, name: a.profiles.full_name ?? undefined, src: a.profiles.avatar_url }))}
-              size={18} overlap={5} ringClass="ring-bg-1"
-            />
-          )}
         </div>
       </div>
 
