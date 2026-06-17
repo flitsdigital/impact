@@ -227,6 +227,49 @@ export async function setTaskStatus(taskId: string, status: string) {
   return unwrap(db().from('tasks').update({ status }).eq('id', taskId).select('id').single())
 }
 
+// ─── Persoonlijke taken (todolijst, niet project-gebonden) ───────────────────
+// Eigenaar = de handelende gebruiker (profileId). De acties zijn op user_id
+// gescoped zodat de assistent alleen eigen todo's kan af-/wegwerken.
+
+export async function createTodo(input: {
+  profileId: string
+  titel: string
+  deadline: string | null
+  prioriteit: string | null
+}) {
+  return unwrap(
+    db().from('todos').insert({
+      user_id:    input.profileId,
+      titel:      input.titel,
+      deadline:   input.deadline,
+      prioriteit: input.prioriteit ?? 'normaal',
+    }).select('id').single(),
+  )
+}
+
+export async function listTodos(profileId: string, includeDone: boolean) {
+  let q = db().from('todos')
+    .select('id, titel, done, deadline, prioriteit')
+    .eq('user_id', profileId)
+  if (!includeDone) q = q.eq('done', false)
+  return unwrap(q.order('created_at', { ascending: false }))
+}
+
+export async function completeTodo(profileId: string, todoId: string) {
+  return unwrap(
+    db().from('todos')
+      .update({ done: true, updated_at: new Date().toISOString() })
+      .eq('id', todoId).eq('user_id', profileId)
+      .select('id').single(),
+  )
+}
+
+export async function deleteTodoById(profileId: string, todoId: string) {
+  return unwrap(
+    db().from('todos').delete().eq('id', todoId).eq('user_id', profileId).select('id').single(),
+  )
+}
+
 // ─── Datum-helpers ──────────────────────────────────────────────────────────
 
 function today(): string {

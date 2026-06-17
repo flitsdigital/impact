@@ -224,6 +224,53 @@ export function buildTools(ctx: ToolContext): AssistantTool[] {
       },
     ),
 
+    // ── Persoonlijke taken (todolijst, niet project-gebonden) ──────────────────
+    t(
+      'add_todo',
+      'Zet een taak op de persoonlijke todolijst van de gebruiker (de "Mijn taken"-lijst, NIET gekoppeld aan een project). Gebruik dit voor losse to-do\'s die de gebruiker voor zichzelf wil onthouden ("zet op mijn lijst", "ik moet nog…"). Voor taken binnen een project gebruik je create_task.',
+      obj(
+        {
+          titel: str('wat er gedaan moet worden'),
+          deadline: str('YYYY-MM-DD (optioneel)'),
+          prioriteit: enumStr(['urgent', 'hoog', 'normaal', 'laag'], 'optioneel'),
+        },
+        ['titel'],
+      ),
+      async (a) => {
+        await db.createTodo({
+          profileId: ctx.profileId,
+          titel: a.titel,
+          deadline: a.deadline ?? null,
+          prioriteit: a.prioriteit ?? null,
+        })
+        return `todo "${a.titel}" toegevoegd`
+      },
+    ),
+    t(
+      'list_todos',
+      'Toon de persoonlijke todolijst van de gebruiker (alleen van henzelf). Standaard alleen openstaande; zet include_done op true voor ook afgevinkte. Gebruik dit om het juiste todo_id te vinden vóór complete_todo of delete_todo, en om vragen als "wat staat er op mijn lijst?" te beantwoorden.',
+      obj({ include_done: { type: 'boolean', description: 'ook afgevinkte tonen' } }),
+      async (a) => JSON.stringify(await db.listTodos(ctx.profileId, a.include_done === true)),
+    ),
+    t(
+      'complete_todo',
+      'Vink een persoonlijke todo af (markeer als klaar). Vind eerst het todo_id met list_todos.',
+      obj({ todo_id: str('id van de todo (uit list_todos)') }, ['todo_id']),
+      async (a) => {
+        await db.completeTodo(ctx.profileId, a.todo_id)
+        return 'todo afgevinkt'
+      },
+    ),
+    t(
+      'delete_todo',
+      'Verwijder een persoonlijke todo. Vind eerst het todo_id met list_todos.',
+      obj({ todo_id: str('id van de todo (uit list_todos)') }, ['todo_id']),
+      async (a) => {
+        await db.deleteTodoById(ctx.profileId, a.todo_id)
+        return 'todo verwijderd'
+      },
+    ),
+
     // ── A. Inzicht / vragen (alleen-lezen) ─────────────────────────────────────
     t(
       'find_stale_leads',
