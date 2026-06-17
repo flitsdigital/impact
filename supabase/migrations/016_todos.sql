@@ -33,11 +33,24 @@ create index if not exists todo_assignees_prof_idx on public.todo_assignees(prof
 alter table public.todos          enable row level security;
 alter table public.todo_assignees enable row level security;
 
-create policy "todos owner or assignee" on public.todos for all to authenticated
+create policy "todos select" on public.todos for select to authenticated
+  using ( user_id = auth.uid()
+          or exists (select 1 from public.todo_assignees a
+                     where a.todo_id = todos.id and a.profile_id = auth.uid()) );
+
+create policy "todos insert" on public.todos for insert to authenticated
+  with check ( user_id = auth.uid() );
+
+create policy "todos update" on public.todos for update to authenticated
   using ( user_id = auth.uid()
           or exists (select 1 from public.todo_assignees a
                      where a.todo_id = todos.id and a.profile_id = auth.uid()) )
-  with check ( user_id = auth.uid() );
+  with check ( user_id = auth.uid()
+               or exists (select 1 from public.todo_assignees a
+                          where a.todo_id = todos.id and a.profile_id = auth.uid()) );
+
+create policy "todos delete" on public.todos for delete to authenticated
+  using ( user_id = auth.uid() );
 
 create policy "todo_assignees readable" on public.todo_assignees for select to authenticated
   using ( exists (select 1 from public.todos t
@@ -53,3 +66,8 @@ create policy "todo_assignees deletable by owner" on public.todo_assignees
   for delete to authenticated
   using ( exists (select 1 from public.todos t
                   where t.id = todo_assignees.todo_id and t.user_id = auth.uid()) );
+
+drop trigger if exists todos_updated_at on public.todos;
+create trigger todos_updated_at
+  before update on public.todos
+  for each row execute function public.update_updated_at();
