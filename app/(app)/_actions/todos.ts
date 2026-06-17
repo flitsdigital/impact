@@ -65,7 +65,10 @@ export async function createTodo(
     const { error: aErr } = await supabase
       .from('todo_assignees')
       .insert(assignees.map((profile_id) => ({ todo_id: row.id, profile_id })))
-    if (aErr) return { error: aErr.message }
+    if (aErr) {
+      await supabase.from('todos').delete().eq('id', row.id) // rol de wees-todo terug
+      return { error: aErr.message }
+    }
   }
 
   const { data: full, error: fErr } = await supabase.from('todos').select(SELECT).eq('id', row.id).single()
@@ -104,16 +107,25 @@ export async function setAssignees(id: string, profileIds: string[]): Promise<{ 
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
-  const { error: delErr } = await supabase.from('todo_assignees').delete().eq('todo_id', id)
-  if (delErr) return { error: delErr.message }
-
-  if (profileIds.length > 0) {
-    const { error: insErr } = await supabase
-      .from('todo_assignees')
-      .insert(profileIds.map((profile_id) => ({ todo_id: id, profile_id })))
-    if (insErr) return { error: insErr.message }
+  if (profileIds.length === 0) {
+    const { error } = await supabase.from('todo_assignees').delete().eq('todo_id', id)
+    return error ? { error: error.message } : {}
   }
-  return {}
+
+  // Upsert de nieuwe set (PK = todo_id+profile_id, dus dubbele zijn no-ops)…
+  const { error: insErr } = await supabase
+    .from('todo_assignees')
+    .upsert(profileIds.map((profile_id) => ({ todo_id: id, profile_id })), { onConflict: 'todo_id,profile_id' })
+  if (insErr) return { error: insErr.message }
+
+  // …en verwijder wie er niet meer bij hoort. Pas ná de geslaagde insert, zodat
+  // een mislukte insert nooit stilletjes alle toewijzingen wist.
+  const { error: delErr } = await supabase
+    .from('todo_assignees')
+    .delete()
+    .eq('todo_id', id)
+    .not('profile_id', 'in', `(${profileIds.join(',')})`)
+  return delErr ? { error: delErr.message } : {}
 }
 
 export async function deleteTodo(id: string): Promise<{ error?: string }> {
