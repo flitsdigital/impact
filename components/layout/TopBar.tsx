@@ -13,6 +13,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { Avatar } from "@/components/ui/Avatar"
 import { useAuthStore } from "@/store/auth"
+import { useTakenStore } from "@/store/taken"
 
 export function TopBar() {
   const router = useRouter()
@@ -54,7 +55,16 @@ export function TopBar() {
       </button>
 
       {/* Right — user menu */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-1">
+        <button
+          type="button"
+          onClick={() => void useTakenStore.getState().openDrawer()}
+          aria-label="Mijn taken (⌘⇧T)"
+          title="Mijn taken (⌘⇧T)"
+          className="flex items-center justify-center size-[28px] rounded-md border-none bg-transparent cursor-pointer text-fg-2 transition-colors hover:bg-bg-3 hover:text-fg-1"
+        >
+          <SvgIcon name="list-check" size={16} />
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button type="button" className="flex items-center gap-1.5 rounded-md px-1.5 py-1 border-none bg-transparent cursor-pointer text-fg-2 transition-colors hover:bg-bg-3">

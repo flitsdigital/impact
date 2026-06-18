@@ -18,6 +18,10 @@ import type { FactuurStatus } from '@/types/factuur'
 import { FACTUUR_STATUS_CONFIG } from '@/types/factuur'
 import type { Lead } from '@/types/lead'
 import { DemoBlock, SectionHeading } from './DemoBlock'
+import { DateShortcutsPicker } from '@/components/todos/DateShortcutsPicker'
+import { PriorityFlags } from '@/components/todos/PriorityFlags'
+import { AssigneeDropdown } from '@/components/todos/AssigneeDropdown'
+import type { TaskPriority } from '@/types/project'
 
 // ─── Mockdata ─────────────────────────────────────────────────────────────────
 
@@ -104,8 +108,16 @@ const DEMO_LEADS: Lead[] = [
 
 // ─── Sectie ───────────────────────────────────────────────────────────────────
 
+const demoMembers = [
+  { id: '1', full_name: 'Jordi Klavers', avatar_url: null },
+  { id: '2', full_name: 'Sam de Vries', avatar_url: null },
+]
+
 export function DomainSection() {
   const [tasks, setTasks] = useState(DEMO_TASKS)
+  const [demoDate, setDemoDate] = useState('')
+  const [demoPrio, setDemoPrio] = useState<TaskPriority>('hoog')
+  const [demoTeam, setDemoTeam] = useState<string[]>([])
 
   function moveTask(taskId: string, toKey: string) {
     setTasks((prev) => prev.map((t) =>
@@ -235,6 +247,22 @@ export function DomainSection() {
         className="p-0 h-64 overflow-hidden"
       >
         <TakenLijst tasks={tasks} onTaskClick={() => {}} showProject />
+      </DemoBlock>
+
+      <DemoBlock title="DateShortcutsPicker" path="@/components/todos/DateShortcutsPicker"
+        description="Datum-picker met snelkoppelingen (vandaag/morgen/volgende week) + kalender. Gebruikt in de Taken-drawer.">
+        <DateShortcutsPicker value={demoDate} onChange={setDemoDate} />
+      </DemoBlock>
+
+      <DemoBlock title="PriorityFlags" path="@/components/todos/PriorityFlags"
+        description="Prioriteit zetten met één tik op een van de vier flags.">
+        <PriorityFlags value={demoPrio} onChange={setDemoPrio} />
+      </DemoBlock>
+
+      <DemoBlock title="AssigneeDropdown" path="@/components/todos/AssigneeDropdown"
+        description="Teamleden toewijzen (multi-select) met avatars.">
+        <AssigneeDropdown value={demoTeam} team={demoMembers}
+          onToggle={(id) => setDemoTeam((v) => (v.includes(id) ? v.filter((x) => x !== id) : [...v, id]))} />
       </DemoBlock>
     </section>
   )
