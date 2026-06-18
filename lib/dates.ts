@@ -26,6 +26,12 @@ export function fmtDate(dateStr: string, opts?: Intl.DateTimeFormatOptions): str
   return parseDate(dateStr).toLocaleDateString('nl-NL', opts ?? { day: 'numeric', month: 'short' })
 }
 
+export function fmtDateTime(dateStr: string): string {
+  return parseDate(dateStr).toLocaleString('nl-NL', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  })
+}
+
 export function isOverdue(dateStr: string): boolean {
   return new Date(dateStr.slice(0, 10) + 'T23:59:59') < new Date()
 }
