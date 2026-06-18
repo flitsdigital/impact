@@ -56,10 +56,14 @@ export async function POST(req: Request) {
   if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? 'Validatiefout' }, { status: 400 })
   const { assignees, ...todo } = parsed.data
 
+  // Defaults voor API-todo's: deadline = vandaag (tenzij meegegeven), prioriteit =
+  // normaal (via het zod-schema). Zo verschijnen ingeschoten taken meteen op vandaag.
+  const vandaag = new Date().toISOString().slice(0, 10)
+
   const admin = createAdminClient()
   const { data: row, error } = await admin
     .from('todos')
-    .insert({ ...todo, deadline: todo.deadline || null })
+    .insert({ ...todo, deadline: todo.deadline || vandaag })
     .select('id')
     .single()
   if (error) return Response.json({ error: error.message }, { status: 400 })

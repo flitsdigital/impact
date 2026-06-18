@@ -241,7 +241,7 @@ export async function createTodo(input: {
     db().from('todos').insert({
       user_id:    input.profileId,
       titel:      input.titel,
-      deadline:   input.deadline,
+      deadline:   input.deadline ?? today(), // standaard vandaag, tenzij meegegeven
       prioriteit: input.prioriteit ?? 'normaal',
     }).select('id').single(),
   )

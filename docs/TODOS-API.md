@@ -39,9 +39,12 @@ Maakt een taak. Body:
 | `user_id` | ✅ | uuid (eigenaar) |
 | `titel` | ✅ | string |
 | `notitie` | — | string \| null |
-| `deadline` | — | `YYYY-MM-DD` \| null |
-| `prioriteit` | — | `urgent` \| `hoog` \| `normaal` (default) \| `laag` |
+| `deadline` | — | `YYYY-MM-DD` — **default: vandaag** als je 'm weglaat |
+| `prioriteit` | — | `urgent` \| `hoog` \| `normaal` (**default**) \| `laag` |
 | `assignees` | — | uuid[] (toegewezen profielen) |
+
+> API-todo's krijgen standaard **deadline = vandaag** en **prioriteit = normaal**;
+> geef de velden mee om dat te overschrijven.
 
 ```bash
 curl -X POST -H "x-api-secret: $SECRET" -H "content-type: application/json" \
