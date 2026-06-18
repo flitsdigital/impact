@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Wegwerp-worktrees van de improve/execute-skill — geen broncode.
+    ".claude/**",
   ]),
 ]);
 

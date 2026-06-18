@@ -1,37 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Flits Impact CRM
 
-## Getting Started
+Intern agency-CRM voor Flits Digital — klanten, content (social media), facturatie,
+leads en projecten in één tool. Next.js (App Router) + Supabase, gebouwd op een
+eigen design-system (donker thema).
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, server actions) + React 19 + TypeScript
+- **Supabase** — Postgres, Auth, Storage, RLS
+- **Tailwind CSS v4** op design-tokens (zie `docs/DESIGN-SYSTEM.md` + `/design-system`)
+- **Zustand** (auth/sidebar state), **React Hook Form + Zod** (forms), **Sonner** (toasts)
+- **AI-assistent** via OpenAI-compatibele chat-API (default Groq), aangestuurd vanuit
+  Telegram → n8n → `/api/assistant`
+
+Pakketbeheer: **pnpm** (v10). Eén lockfile: `pnpm-lock.yaml`.
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env.local   # vul de waarden in (zie hieronder)
+pnpm dev                     # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment-variabelen (`.env.local`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variabele | Nodig voor |
+|-----------|-----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase-project (browser + server) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase auth/queries als ingelogde gebruiker |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only: publieke `/preview`-pagina, AI-assistent, instellingen-logboek. **Nooit in de browser.** |
+| `AI_API_KEY` | AI-assistent (Groq-sleutel `gsk_…`, of OpenAI/Gemini) |
+| `AI_BASE_URL` | AI-provider-endpoint (default Groq) |
+| `AI_MODEL` | Model (default `llama-3.3-70b-versatile`) |
+| `ASSISTANT_WEBHOOK_SECRET` | Gedeeld geheim dat n8n meestuurt als `x-assistant-secret` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+De service-role-key vind je in Supabase → Project Settings → API → `service_role`.
 
-## Learn More
+### Database
 
-To learn more about Next.js, take a look at the following resources:
+SQL-migraties staan in `supabase/migrations/` (genummerd). Toepassen via
+`supabase db push` of de SQL-editor in het dashboard.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm dev          # dev-server
+pnpm build        # productie-build
+pnpm start        # productie-server (na build)
+pnpm test         # vitest (unit tests in lib/)
+pnpm typecheck    # tsc --noEmit
+pnpm lint         # eslint
+```
 
-## Deploy on Vercel
+## Structuur
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/(app)/        ingelogde modules (dashboard, klanten, content, leads, projecten, …)
+app/(auth)/       login + wachtwoordherstel
+app/api/          route handlers (assistant + posts)
+app/preview/      publieke post-preview (service-role, geen sessie)
+components/ui/    design-system-atomen — hergebruik vóór je nieuw bouwt
+lib/              supabase-clients, datum-/valuta-helpers, assistant-logica
+supabase/migrations/  database-schema (RLS aan)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# impact
+## Conventies
+
+Zie `AGENTS.md` + `docs/DESIGN-SYSTEM.md`: altijd Tailwind-classes op tokens
+(`bg-bg-2`, `text-fg-3`, …), datums via `lib/dates`, valuta via `lib/format`,
+en hergebruik bestaande atomen uit `components/ui/`.
