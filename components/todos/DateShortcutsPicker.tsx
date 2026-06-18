@@ -19,8 +19,14 @@ function parseValue(v?: string): Date | undefined {
 const today = () => toLocalDateStr(new Date())
 const label = (v: string) => fmtDate(v, { weekday: 'short', day: 'numeric', month: 'short' })
 
-export function DateShortcutsPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = React.useState(false)
+export function DateShortcutsPicker({ value, onChange, onOpenChange }: {
+  value: string
+  onChange: (v: string) => void
+  /** Meldt open/dicht terug zodat de caller (TodoRow) z'n editors open kan houden. */
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [open, setOpenRaw] = React.useState(false)
+  const setOpen = (o: boolean) => { setOpenRaw(o); onOpenChange?.(o) }
   const pick = (v: string) => { onChange(v); setOpen(false) }
   const shortcuts = [
     { label: 'Vandaag', v: today() },

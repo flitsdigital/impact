@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { cn } from '@/lib/utils'
 import { fmtDate } from '@/lib/dates'
 import { SvgIcon } from '@/components/ui/SvgIcon'
@@ -21,6 +22,12 @@ export function TodoRow({
   onDelete: () => void
 }) {
   const hasMeta = todo.deadline || todo.prioriteit !== 'normaal' || todo.assignees.length > 0
+
+  // Houd de editors zichtbaar zolang een picker openstaat — anders verlies je bij
+  // het naar de popover bewegen de hover en klapt alles dicht.
+  const [dateOpen, setDateOpen] = React.useState(false)
+  const [assigneeOpen, setAssigneeOpen] = React.useState(false)
+  const editing = dateOpen || assigneeOpen
 
   return (
     <div className="group flex items-start gap-2.5 py-2">
@@ -44,7 +51,7 @@ export function TodoRow({
 
           {/* Read-only meta — compact; verbergt zodra je over de rij hovert (dan komen de editors). */}
           {hasMeta && (
-            <div className="flex shrink-0 items-center gap-2.5 text-fg-3 group-hover:hidden">
+            <div className={cn('flex shrink-0 items-center gap-2.5 text-fg-3', editing ? 'hidden' : 'group-hover:hidden')}>
               {todo.deadline && (
                 <span className="inline-flex items-center gap-1 text-[11px]">
                   <SvgIcon name="calendar" size={11} />
@@ -66,11 +73,11 @@ export function TodoRow({
 
         {todo.notitie && <p className="mt-0.5 truncate text-[12px] leading-snug text-fg-2">{todo.notitie}</p>}
 
-        {/* Editors — alleen zichtbaar bij hover, zodat de rij in rust compact blijft. */}
-        <div className="mt-1.5 hidden flex-wrap items-center gap-1.5 group-hover:flex">
-          <DateShortcutsPicker value={todo.deadline ?? ''} onChange={onDate} />
+        {/* Editors — zichtbaar bij hover óf zolang een picker openstaat. */}
+        <div className={cn('mt-1.5 flex-wrap items-center gap-1.5', editing ? 'flex' : 'hidden group-hover:flex')}>
+          <DateShortcutsPicker value={todo.deadline ?? ''} onChange={onDate} onOpenChange={setDateOpen} />
           <PriorityFlags value={todo.prioriteit} onChange={onPriority} />
-          <AssigneeDropdown value={todo.assignees.map((a) => a.profile_id)} team={team} onToggle={onAssignToggle} />
+          <AssigneeDropdown value={todo.assignees.map((a) => a.profile_id)} team={team} onToggle={onAssignToggle} onOpenChange={setAssigneeOpen} />
         </div>
       </div>
 

@@ -15,14 +15,17 @@ const PILL =
 // vaul-Drawer, waar Radix' fixed-popup naar linksboven (0,0) klapt. Multi-select:
 // een klik togglet en de popover blijft open.
 export function AssigneeDropdown({
-  value, team, onToggle, ringClass = 'ring-secondary',
+  value, team, onToggle, ringClass = 'ring-secondary', onOpenChange,
 }: {
   value: string[]
   team: TeamMember[]
   onToggle: (id: string) => void
   ringClass?: string
+  /** Meldt open/dicht terug zodat de caller (TodoRow) z'n editors open kan houden. */
+  onOpenChange?: (open: boolean) => void
 }) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpenRaw] = React.useState(false)
+  const setOpen = (o: boolean) => { setOpenRaw(o); onOpenChange?.(o) }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
