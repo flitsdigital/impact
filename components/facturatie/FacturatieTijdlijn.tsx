@@ -20,7 +20,8 @@ import { toggleInvoiceRecord, cycleFactuurStatus } from '@/app/(app)/timeline/ac
 import type { KlantBilling, ComputedInvoice, FactuurStatus } from '@/types/factuur'
 import { FACTUUR_STATUS_NEXT } from '@/types/factuur'
 import { formatEur } from '@/lib/format'
-import { toLocalDateStr } from '@/lib/dates'
+import { getMonday, getISOWeek, MONTHS_NL } from '@/lib/dates'
+import { getComputedInvoices } from '@/lib/facturatie'
 import { FactuurStatusBadge } from './FactuurStatusBadge'
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
@@ -33,95 +34,10 @@ const HDR_WEEK_H = 28    // px – week number row height
 const BAR_H = 18    // px – contract bar height
 const DOT_R = 5     // px – dot radius (diameter = 10px)
 
-// ─── Dutch locale ─────────────────────────────────────────────────────────────
-
-const MONTHS_NL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
-  'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
-
 // ─── Date helpers ─────────────────────────────────────────────────────────────
-
-function getMonday(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay()
-  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
-  return d
-}
 
 function diffDays(a: Date, b: Date): number {
   return Math.floor((a.getTime() - b.getTime()) / 86_400_000)
-}
-
-function addMonths(d: Date, n: number): Date {
-  const out = new Date(d)
-  out.setMonth(out.getMonth() + n)
-  return out
-}
-
-function getISOWeek(d: Date): number {
-  const date = new Date(d)
-  date.setHours(0, 0, 0, 0)
-  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7))
-  const jan4 = new Date(date.getFullYear(), 0, 4)
-  return 1 + Math.round(
-    ((date.getTime() - jan4.getTime()) / 86_400_000 - 3 + ((jan4.getDay() + 6) % 7)) / 7,
-  )
-}
-
-// ─── Invoice date calculation ─────────────────────────────────────────────────
-
-function calcRecurringDates(klant: KlantBilling, until: Date): string[] {
-  const startStr = klant.contract_start_date
-  if (!startStr || !klant.billing_cycle) return []
-
-  const start = new Date(startStr + 'T00:00:00')
-  const endD = klant.contract_end_date
-    ? new Date(klant.contract_end_date + 'T00:00:00')
-    : until
-
-  const dates: string[] = []
-  let cur = new Date(start)
-
-  while (cur <= until && cur <= endD) {
-    dates.push(toLocalDateStr(cur))
-    switch (klant.billing_cycle) {
-      case '4_weeks': cur.setDate(cur.getDate() + 28); break
-      case '6_weeks': cur.setDate(cur.getDate() + 42); break
-      case 'monthly': cur = addMonths(cur, 1); break           // F8: real calendar months
-      case 'custom': cur.setDate(cur.getDate() + (klant.custom_cycle_days ?? 30)); break
-    }
-  }
-  return dates
-}
-
-// ─── Computed invoices per klant ──────────────────────────────────────────────
-
-function getComputedInvoices(klant: KlantBilling, until: Date): ComputedInvoice[] {
-  if (klant.type === 'recurring') {
-    const dates = calcRecurringDates(klant, until)
-    return dates.map((dateStr) => {
-      const rec = klant.invoice_records.find((r) => r.date === dateStr)
-      return {
-        date: new Date(dateStr + 'T00:00:00'),
-        dateStr,
-        invoiced: rec?.invoiced ?? false,
-        invoicedAt: rec?.invoiced_at ?? null,
-        amount: klant.price_per_cycle ?? 0,
-      }
-    })
-  }
-
-  // project / one-off: use klant_facturen milestones
-  return (klant.klant_facturen ?? []).map((f) => ({
-    date: new Date(f.due_date + 'T00:00:00'),
-    dateStr: f.due_date,
-    invoiced: f.status === 'paid',
-    invoicedAt: f.paid_at,
-    amount: f.amount,
-    factuurId: f.id,
-    factuurStatus: f.status,
-    label: f.label,
-  }))
 }
 
 // ─── Dot color ────────────────────────────────────────────────────────────────
@@ -447,10 +363,6 @@ export function FacturatieTijdlijn({ klanten: initialKlanten }: Props) {
               onChange={setSearch}
               placeholder="Zoek een klant"
             />
-            <Button size="sm">
-              <SvgIcon name="user-plus" size={14} />
-              Klant toevoegen
-            </Button>
           </>
         }
         toolbar={
