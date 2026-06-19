@@ -27,12 +27,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { BijlageModal, type BijlageDocument } from '@/components/ui/BijlageModal'
+import { SelectionBar } from '@/components/ui/SelectionBar'
 import { DemoBlock, SectionHeading } from './DemoBlock'
 
 export function OverlaysSection() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [bijlageOpen, setBijlageOpen] = useState(false)
+  const [selCount, setSelCount] = useState(0)
   const [demoDocs, setDemoDocs] = useState<BijlageDocument[]>([
     { id: 'demo-1', type: 'link', naam: 'Design brief', url: 'https://docs.google.com/document/d/voorbeeld' },
   ])
@@ -144,6 +146,21 @@ export function OverlaysSection() {
             <p className="text-[13px] text-fg-2">Inhoud van de popover.</p>
           </PopoverContent>
         </Popover>
+      </DemoBlock>
+
+      <DemoBlock
+        title="SelectionBar"
+        path="@/components/ui/SelectionBar"
+        description="Zwevende actiebalk onderaan het scherm bij bulk-selectie (zie KlantenTable). Toont teller + wis-knop; acties komen als children. Verschijnt pas bij count > 0."
+      >
+        <Button size="sm" variant="outline" onClick={() => setSelCount(3)}>Toon actiebalk</Button>
+        <SelectionBar count={selCount} onClear={() => setSelCount(0)} label="geselecteerd">
+          <Button size="sm" variant="outline">Voorbeeldactie</Button>
+          <Button size="sm" variant="destructive">
+            <SvgIcon name="archive" size={14} />
+            Archiveren
+          </Button>
+        </SelectionBar>
       </DemoBlock>
     </section>
   )

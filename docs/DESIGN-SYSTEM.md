@@ -110,6 +110,7 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `Drawer` (vaul) / `AppDrawer` (+Header/Meta/Body/Footer) | Zwevend zijpaneel voor detail/aanmaak-flows. Gebruik vrijwel altijd `AppDrawer` |
 | `DropdownMenu` (+Trigger/Content/Item/Label/Separator) | Elk klik-menu (radix, met keyboard-nav). **Geen handgerolde absolute panelen** |
 | `Popover` (+Trigger/Content/Header) | Vrije popups (basis onder DatePicker) |
+| `SelectionBar` | Zwevende actiebalk onderaan bij bulk-selectie (`count`, `onClear`, `label?`, children = acties). Verschijnt pas bij `count > 0` (zie KlantenTable) |
 
 ⚠ base-ui/radix-popups **binnen een vaul-Drawer** hebben `pointer-events-auto` nodig — zit al in de Content-componenten gebakken (zie memory/audit).
 

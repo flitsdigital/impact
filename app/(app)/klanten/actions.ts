@@ -7,7 +7,7 @@ import { z } from 'zod/v4'
 const klantSchema = z.object({
   naam: z.string().min(1, 'Naam is verplicht'),
   type: z.enum(['recurring', 'project', 'one-off']),
-  contactpersoon: z.string().optional(),
+  contactpersoon: z.string().optional().nullable(),
   status: z.enum(['actief', 'gepauzeerd', 'gearchiveerd']).default('actief'),
   volgende_factuur: z.string().optional().nullable(),
   email: z.string().optional().nullable(),
@@ -65,6 +65,31 @@ export async function updateKlant(
 
   revalidatePath('/klanten')
   revalidatePath(`/klanten/${id}`)
+  return {}
+}
+
+const bulkPatchSchema = z.object({
+  status: z.enum(['actief', 'gepauzeerd', 'gearchiveerd']).optional(),
+  type: z.enum(['recurring', 'project', 'one-off']).optional(),
+})
+
+export async function bulkUpdateKlanten(
+  ids: string[],
+  patch: { status?: string; type?: string },
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  if (ids.length === 0) return { error: 'Geen klanten geselecteerd.' }
+
+  const parsed = bulkPatchSchema.safeParse(patch)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validatiefout' }
+  if (Object.keys(parsed.data).length === 0) return { error: 'Niets om bij te werken.' }
+
+  const { error } = await supabase.from('klanten').update(parsed.data).in('id', ids)
+  if (error) return { error: error.message }
+
+  revalidatePath('/klanten')
   return {}
 }
 
