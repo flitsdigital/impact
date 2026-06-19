@@ -25,6 +25,7 @@ interface TakenState {
   openDrawer: () => Promise<void>
   closeDrawer: () => void
   add: (input: NewTodoInput) => Promise<void>
+  load: () => Promise<void>
   toggle: (id: string) => Promise<void>
   patch: (id: string, updates: Partial<Pick<TodoWithAssignees, 'titel' | 'notitie' | 'deadline' | 'prioriteit'>>) => Promise<void>
   assign: (id: string, profileIds: string[]) => Promise<void>
@@ -43,12 +44,18 @@ export const useTakenStore = create<TakenState>((set, get) => ({
   todos: [],
   team: [],
 
-  openDrawer: async () => {
-    set({ open: true })
+  // Fetch één keer; volgende calls zijn no-ops dankzij de loaded/loading-guard.
+  // Zo blijft de lijst geladen over paginawissels heen (store is een singleton).
+  load: async () => {
     if (get().loaded || get().loading) return
     set({ loading: true })
     const [todos, team] = await Promise.all([getTodos(), getTeam()])
     set({ todos: sortTodos(todos), team, loaded: true, loading: false })
+  },
+
+  openDrawer: async () => {
+    set({ open: true })
+    await get().load()
   },
 
   closeDrawer: () => set({ open: false }),
@@ -81,7 +88,7 @@ export const useTakenStore = create<TakenState>((set, get) => ({
 
   patch: async (id, updates) => {
     const prev = get().todos
-    set({ todos: prev.map((t) => (t.id === id ? { ...t, ...updates } : t)) })
+    set({ todos: sortTodos(prev.map((t) => (t.id === id ? { ...t, ...updates } : t))) })
     const { error } = await updateTodo(id, updates)
     if (error) set({ todos: prev })
   },

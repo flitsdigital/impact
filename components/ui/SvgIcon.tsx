@@ -18,6 +18,8 @@ const CUSTOM_ICONS = [
   'list', 'log-out', 'map', 'message-square', 'pencil',
   'refresh', 'save', 'settings', 'smile', 'star',
   'table', 'trash', 'upload', 'user', 'x',
+  // Dienst-typen op leads:
+  'code', 'cart', 'share', 'megaphone',
 ]
 
 /**

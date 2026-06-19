@@ -15,6 +15,11 @@ import { StatusChip } from '@/components/ui/StatusChip'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { PillSelect } from '@/components/ui/PillSelect'
+import { LevelSelect } from '@/components/ui/LevelSelect'
+import { LevelBadge } from '@/components/ui/LevelBadge'
+import { RolePill } from '@/components/ui/RolePill'
+import { Stepper } from '@/components/ui/Stepper'
+import { LEVELS, ROLE_IDS, type Level, type RoleId } from '@/lib/permissions'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
 import {
@@ -53,6 +58,9 @@ export function AtomsSection() {
   const [selectValue, setSelectValue] = useState('all')
   const [pillValue, setPillValue] = useState('foto')
   const [date, setDate] = useState('2026-06-11')
+  const [level, setLevel] = useState<Level>(2)
+  const [role, setRole] = useState<RoleId>('lid')
+  const [step, setStep] = useState(1)
 
   return (
     <section className="flex flex-col gap-8">
@@ -193,13 +201,20 @@ export function AtomsSection() {
       <DemoBlock
         title="PillSelect"
         path="@/components/ui/PillSelect"
-        description="Native select als pill met optioneel icoon. OS-gerenderd menu, dus altijd veilig binnen Drawers/Dialogs."
+        description="Native select met twee looks: pill (compact, inline) en input (volle breedte, als het Input-atoom). OS-gerenderd menu, dus altijd veilig binnen Drawers/Dialogs."
       >
-        <PillSelect value={pillValue} onChange={setPillValue} icon="image-square">
-          <option value="foto">Foto</option>
-          <option value="video">Video</option>
-          <option value="reel">Reel</option>
-        </PillSelect>
+        <div className="flex w-full flex-col gap-3">
+          <PillSelect value={pillValue} onChange={setPillValue} icon="image-square">
+            <option value="foto">Foto</option>
+            <option value="video">Video</option>
+            <option value="reel">Reel</option>
+          </PillSelect>
+          <PillSelect variant="input" value={pillValue} onChange={setPillValue}>
+            <option value="foto">Foto</option>
+            <option value="video">Video</option>
+            <option value="reel">Reel</option>
+          </PillSelect>
+        </div>
       </DemoBlock>
 
       <DemoBlock
@@ -284,6 +299,53 @@ export function AtomsSection() {
             </TableRow>
           </TableBody>
         </table>
+      </DemoBlock>
+
+      <DemoBlock
+        title="LevelSelect · LevelBadge"
+        path="@/components/ui/{LevelSelect,LevelBadge}"
+        description="Rechten-niveau per feature (Geen · Bekijken · Bewerken · Beheren). LevelSelect kiest, LevelBadge toont. Voeding via lib/permissions (LEVELS)."
+        className="flex-col items-start"
+      >
+        <LevelSelect value={level} onChange={setLevel} showLabels />
+        <div className="flex flex-wrap items-center gap-2">
+          {LEVELS.map((l) => (
+            <LevelBadge key={l.value} level={l.value} />
+          ))}
+        </div>
+      </DemoBlock>
+
+      <DemoBlock
+        title="RolePill"
+        path="@/components/ui/RolePill"
+        description="Rol-chip met gekleurde dot. Klikbaar (selecteerbaar via onClick) of puur informatief. Kleur/naam uit ROLE_META in lib/permissions."
+      >
+        {ROLE_IDS.map((r) => (
+          <RolePill key={r} role={r} active={role === r} onClick={() => setRole(r)} />
+        ))}
+      </DemoBlock>
+
+      <DemoBlock
+        title="Stepper"
+        path="@/components/ui/Stepper"
+        description="Voortgangsindicator voor wizards. Voltooide stappen krijgen een vinkje; eerdere stappen zijn klikbaar via onJump."
+        className="flex-col items-start"
+      >
+        <div className="w-full max-w-md">
+          <Stepper
+            steps={[
+              { id: 'email', label: 'E-mailadres' },
+              { id: 'rol', label: 'Rol' },
+              { id: 'fijn', label: 'Fijn-afstemmen' },
+            ]}
+            current={step}
+            onJump={setStep}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))}>Terug</Button>
+          <Button size="sm" onClick={() => setStep((s) => Math.min(2, s + 1))}>Volgende</Button>
+        </div>
       </DemoBlock>
     </section>
   )

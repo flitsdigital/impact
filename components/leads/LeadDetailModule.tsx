@@ -26,7 +26,7 @@ import {
 import { BijlageModal } from '@/components/ui/BijlageModal'
 import { DocumentIcon } from '@/components/ui/DocumentIcon'
 import type { Lead, LeadStatus, LeadContactmoment, LeadDocument, ContactmomentType } from '@/types/lead'
-import { LEAD_COLUMNS, BRON_LABEL, CONTACT_TYPE_CONFIG } from '@/types/lead'
+import { LEAD_COLUMNS, BRON_LABEL, CONTACT_TYPE_CONFIG, DIENST_CONFIG } from '@/types/lead'
 import {
   updateLead,
   deleteLead,
@@ -79,6 +79,7 @@ function EditDialog({
       email:          (data.get('email') as string) || null,
       telefoon:       (data.get('telefoon') as string) || null,
       bron:           data.get('bron') as Lead['bron'],
+      dienst:         (data.get('dienst') as Lead['dienst']) || null,
       waarde:         waardeRaw ? Number(waardeRaw) : null,
       notities:       (data.get('notities') as string) || null,
     }
@@ -434,6 +435,14 @@ export function LeadDetailModule({
         <div className="flex-1 min-w-0 overflow-y-auto">
           <div className="w-full max-w-8/12 mx-auto min-h-full px-8 pt-6 pb-8 flex flex-col gap-3">
 
+            {/* Dienst — subtiel, boven de titel */}
+            {lead.dienst && (
+              <div className="flex items-center gap-1.5 text-fg-3">
+                <SvgIcon name={DIENST_CONFIG[lead.dienst].iconName} size={16} />
+                <span className="text-[14px] font-medium">{DIENST_CONFIG[lead.dienst].label}</span>
+              </div>
+            )}
+
             {/* Title */}
             <h1 className="text-[28px] font-semibold text-fg-1 leading-tight">
               {lead.bedrijfsnaam}
@@ -452,10 +461,10 @@ export function LeadDetailModule({
                       iconName={statusCol.iconName}
                       label={statusCol.label}
                       textClass={statusCol.textClass}
-                      iconSize={13}
-                      labelClass="text-[12px] text-fg-2"
+                      iconSize={16}
+                      labelClass="text-[14px] text-fg-2"
                     />
-                    <SvgIcon name="caret-down" size={10} className="text-fg-3" />
+                    <SvgIcon name="caret-down" size={12} className="text-fg-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="min-w-[160px]">
                     {LEAD_COLUMNS.map((col) => (
@@ -477,22 +486,22 @@ export function LeadDetailModule({
 
               {/* Bron */}
               <div className="flex items-center gap-1.5">
-                <SvgIcon name="signal-bars" size={13} className="text-fg-3" />
-                <span className="text-[12px] text-fg-2">{BRON_LABEL[lead.bron]}</span>
+                <SvgIcon name="signal-bars" size={16} className="text-fg-3" />
+                <span className="text-[14px] text-fg-2">{BRON_LABEL[lead.bron]}</span>
               </div>
 
               {/* Waarde */}
               {lead.waarde != null && (
                 <div className="flex items-center gap-1.5">
-                  <SvgIcon name="coin-vertical" size={13} className="text-fg-3" />
-                  <span className="text-[12px] text-fg-2 tabular-nums">{formatEur(lead.waarde)}</span>
+                  <SvgIcon name="coin-vertical" size={16} className="text-fg-3" />
+                  <span className="text-[14px] text-fg-2 tabular-nums">{formatEur(lead.waarde)}</span>
                 </div>
               )}
 
               {/* Aangemaakt */}
               <div className="flex items-center gap-1.5">
-                <SvgIcon name="calendar" size={13} className="text-fg-3" />
-                <span className="text-[12px] text-fg-2 tabular-nums">{fmtDate(lead.created_at)}</span>
+                <SvgIcon name="calendar" size={16} className="text-fg-3" />
+                <span className="text-[14px] text-fg-2 tabular-nums">{fmtDate(lead.created_at)}</span>
               </div>
             </div>
 
@@ -500,25 +509,25 @@ export function LeadDetailModule({
             <div className="flex items-center gap-4 flex-wrap">
               {lead.contactpersoon && (
                 <div className="flex items-center gap-1.5">
-                  <SvgIcon name="user" size={13} className="text-fg-3" />
-                  <span className="text-[12px] text-fg-2">{lead.contactpersoon}</span>
+                  <SvgIcon name="user" size={16} className="text-fg-3" />
+                  <span className="text-[14px] text-fg-2">{lead.contactpersoon}</span>
                 </div>
               )}
               {lead.email && (
                 <a
                   href={`mailto:${lead.email}`}
-                  className="flex items-center gap-1.5 text-[12px] text-fg-2 hover:text-fg-1 transition-colors"
+                  className="flex items-center gap-1.5 text-[14px] text-fg-2 hover:text-fg-1 transition-colors"
                 >
-                  <SvgIcon name="inbox" size={13} className="text-fg-3" />
+                  <SvgIcon name="inbox" size={16} className="text-fg-3" />
                   {lead.email}
                 </a>
               )}
               {lead.telefoon && (
                 <a
                   href={`tel:${lead.telefoon}`}
-                  className="flex items-center gap-1.5 text-[12px] text-fg-2 hover:text-fg-1 transition-colors"
+                  className="flex items-center gap-1.5 text-[14px] text-fg-2 hover:text-fg-1 transition-colors"
                 >
-                  <SvgIcon name="user-clock" size={13} className="text-fg-3" />
+                  <SvgIcon name="user-clock" size={16} className="text-fg-3" />
                   {lead.telefoon}
                 </a>
               )}
@@ -526,9 +535,9 @@ export function LeadDetailModule({
                 <button
                   type="button"
                   onClick={() => setEditOpen(true)}
-                  className="flex items-center gap-1 text-[12px] text-fg-3 hover:text-fg-1 transition-colors"
+                  className="flex items-center gap-1.5 text-[14px] text-fg-3 hover:text-fg-1 transition-colors"
                 >
-                  <SvgIcon name="plus" size={12} />
+                  <SvgIcon name="plus" size={16} />
                   Contactgegevens toevoegen
                 </button>
               )}
@@ -540,9 +549,9 @@ export function LeadDetailModule({
                   href={doc.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[12px] text-fg-2 hover:text-fg-1 transition-colors"
+                  className="flex items-center gap-1.5 text-[14px] text-fg-2 hover:text-fg-1 transition-colors"
                 >
-                  <DocumentIcon type={doc.type} url={doc.url} size={12} />
+                  <DocumentIcon type={doc.type} url={doc.url} size={16} />
                   {doc.naam}
                 </a>
               ))}
@@ -551,9 +560,9 @@ export function LeadDetailModule({
               <button
                 type="button"
                 onClick={() => setBijlageOpen(true)}
-                className="flex items-center gap-1 text-[12px] text-fg-3 hover:text-fg-1 transition-colors"
+                className="flex items-center gap-1.5 text-[14px] text-fg-3 hover:text-fg-1 transition-colors"
               >
-                <SvgIcon name="plus" size={12} />
+                <SvgIcon name="plus" size={16} />
                 Bijlage
               </button>
             </div>

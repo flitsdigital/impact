@@ -1,16 +1,9 @@
 import { Input } from '@/components/ui/Input'
 import { Label } from '@/components/ui/Label'
 import { Textarea } from '@/components/ui/Textarea'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/Select'
-import type { Lead, LeadBron } from '@/types/lead'
-import { BRON_LABEL } from '@/types/lead'
+import { PillSelect } from '@/components/ui/PillSelect'
+import type { Lead, LeadBron, LeadDienst } from '@/types/lead'
+import { BRON_LABEL, DIENST_CONFIG } from '@/types/lead'
 
 /**
  * Gedeelde veldenset van het lead-formulier (NieuweLeadDrawer + bewerken-dialog).
@@ -84,18 +77,12 @@ export function LeadFormFields({ lead, idPrefix = '' }: LeadFormFieldsProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={id('bron')}>Bron</Label>
-          <Select name="bron" defaultValue={lead?.bron ?? 'overig'}>
-            <SelectTrigger id={id('bron')} className="w-full" data-vaul-no-drag>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {(Object.keys(BRON_LABEL) as LeadBron[]).map((b) => (
-                  <SelectItem key={b} value={b}>{BRON_LABEL[b]}</SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          {/* PillSelect variant=input: native select, werkt betrouwbaar in de Drawer */}
+          <PillSelect id={id('bron')} name="bron" variant="input" defaultValue={lead?.bron ?? 'overig'}>
+            {(Object.keys(BRON_LABEL) as LeadBron[]).map((b) => (
+              <option key={b} value={b}>{BRON_LABEL[b]}</option>
+            ))}
+          </PillSelect>
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={id('waarde')}>Geschatte waarde (€)</Label>
@@ -110,6 +97,17 @@ export function LeadFormFields({ lead, idPrefix = '' }: LeadFormFieldsProps) {
             data-vaul-no-drag
           />
         </div>
+      </div>
+
+      {/* Dienst */}
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={id('dienst')}>Dienst</Label>
+        <PillSelect id={id('dienst')} name="dienst" variant="input" defaultValue={lead?.dienst ?? ''}>
+          <option value="">Geen dienst</option>
+          {(Object.keys(DIENST_CONFIG) as LeadDienst[]).map((d) => (
+            <option key={d} value={d}>{DIENST_CONFIG[d].label}</option>
+          ))}
+        </PillSelect>
       </div>
 
       {/* Notities */}

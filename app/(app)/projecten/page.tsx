@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/permissions.server'
 import { ProjectenModule } from '@/components/projecten/ProjectenModule'
 import type { Project, Milestone, ProjectAssigneeProfile } from '@/types/project'
 
 export default async function ProjectenPage() {
+  await requireFeature('projecten')
   const supabase = await createClient()
 
   // Assignees per project (table may not exist yet)

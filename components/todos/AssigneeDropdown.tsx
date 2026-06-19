@@ -15,21 +15,28 @@ const PILL =
 // vaul-Drawer, waar Radix' fixed-popup naar linksboven (0,0) klapt. Multi-select:
 // een klik togglet en de popover blijft open.
 export function AssigneeDropdown({
-  value, team, onToggle, ringClass = 'ring-secondary', onOpenChange,
+  value, team, onToggle, ringClass = 'ring-secondary', onOpenChange, compact = false,
 }: {
   value: string[]
   team: TeamMember[]
   onToggle: (id: string) => void
   ringClass?: string
-  /** Meldt open/dicht terug zodat de caller (TodoRow) z'n editors open kan houden. */
+  /** Meldt open/dicht terug zodat de caller (TodoRow) z'n rij open kan houden. */
   onOpenChange?: (open: boolean) => void
+  /** Compacte, stijl-loze trigger voor in rijen: icoon als leeg, avatars als gevuld. */
+  compact?: boolean
 }) {
   const [open, setOpenRaw] = React.useState(false)
   const setOpen = (o: boolean) => { setOpenRaw(o); onOpenChange?.(o) }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger className={cn(PILL, value.length === 0 && 'text-fg-3')} data-vaul-no-drag>
+      <PopoverTrigger
+        className={compact
+          ? cn('inline-flex items-center whitespace-nowrap outline-none transition-colors hover:text-fg-1', value.length === 0 && 'text-fg-3/60')
+          : cn(PILL, value.length === 0 && 'text-fg-3')}
+        data-vaul-no-drag
+      >
         {value.length > 0 ? (
           <AvatarStack
             people={value.map((id) => ({
@@ -37,15 +44,15 @@ export function AssigneeDropdown({
               name: team.find((t) => t.id === id)?.full_name ?? undefined,
               src: team.find((t) => t.id === id)?.avatar_url,
             }))}
-            size={16} overlap={5} ringClass={ringClass}
+            size={compact ? 20 : 16} overlap={compact ? 6 : 5} ringClass={compact ? 'ring-bg-1' : ringClass}
           />
         ) : (
-          <SvgIcon name="user-plus" size={12} />
+          <SvgIcon name="user-plus" size={compact ? 16 : 12} />
         )}
-        {value.length > 0 ? `${value.length} toegewezen` : 'Toewijzen'}
+        {!compact && (value.length > 0 ? `${value.length} toegewezen` : 'Toewijzen')}
       </PopoverTrigger>
 
-      <PopoverContent align="start" className="pointer-events-auto w-56 gap-0 p-1">
+      <PopoverContent align={compact ? 'end' : 'start'} className="pointer-events-auto w-56 gap-0 p-1">
         {team.map((t) => {
           const on = value.includes(t.id)
           return (

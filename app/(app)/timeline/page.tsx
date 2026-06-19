@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/permissions.server'
 import { FacturatieTijdlijn } from '@/components/facturatie/FacturatieTijdlijn'
 import type { KlantBilling } from '@/types/factuur'
 
 export default async function TimelinePage() {
+  await requireFeature('facturatie')
   const supabase = await createClient()
 
   const { data: klanten } = await supabase

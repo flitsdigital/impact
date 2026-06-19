@@ -12,7 +12,7 @@ const createSchema = z.object({
   notitie:    z.string().optional().nullable(),
   deadline:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ongeldige datum').optional().nullable(),
   prioriteit: z.enum(['urgent', 'hoog', 'normaal', 'laag']).default('normaal'),
-  assignees:  z.array(z.string().uuid()).default([]),
+  assignees:  z.array(z.string().guid()).default([]),
 })
 
 const patchSchema = z.object({
@@ -28,6 +28,7 @@ export async function getTeam(): Promise<TeamMember[]> {
   const { data } = await supabase
     .from('profiles')
     .select('id, full_name, avatar_url')
+    .not('full_name', 'is', null) // naamloze profielen niet in de toewijs-lijst
     .order('full_name', { ascending: true })
   return (data ?? []) as TeamMember[]
 }
@@ -109,7 +110,7 @@ export async function setAssignees(id: string, profileIds: string[]): Promise<{ 
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
   // Valideer als UUIDs — dit is ook de enige plek met een handgebouwde filterstring.
-  const parsed = z.array(z.string().uuid()).safeParse(profileIds)
+  const parsed = z.array(z.string().guid()).safeParse(profileIds)
   if (!parsed.success) return { error: 'Ongeldige toewijzing' }
   const ids = parsed.data
 

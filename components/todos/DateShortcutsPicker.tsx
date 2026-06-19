@@ -18,12 +18,15 @@ function parseValue(v?: string): Date | undefined {
 }
 const today = () => toLocalDateStr(new Date())
 const label = (v: string) => fmtDate(v, { weekday: 'short', day: 'numeric', month: 'short' })
+const shortLabel = (v: string) => fmtDate(v, { day: 'numeric', month: 'short' })
 
-export function DateShortcutsPicker({ value, onChange, onOpenChange }: {
+export function DateShortcutsPicker({ value, onChange, onOpenChange, compact = false }: {
   value: string
   onChange: (v: string) => void
-  /** Meldt open/dicht terug zodat de caller (TodoRow) z'n editors open kan houden. */
+  /** Meldt open/dicht terug zodat de caller (TodoRow) z'n rij open kan houden. */
   onOpenChange?: (open: boolean) => void
+  /** Compacte, stijl-loze trigger voor in rijen: icoon als leeg, korte datum als gevuld. */
+  compact?: boolean
 }) {
   const [open, setOpenRaw] = React.useState(false)
   const setOpen = (o: boolean) => { setOpenRaw(o); onOpenChange?.(o) }
@@ -35,11 +38,16 @@ export function DateShortcutsPicker({ value, onChange, onOpenChange }: {
   ]
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger className={cn(PILL, !value && 'text-fg-3')}>
-        <SvgIcon name="calendar" size={12} />
-        {value ? label(value) : 'Datum'}
+      <PopoverTrigger
+        aria-label="Datum"
+        className={compact
+          ? cn('inline-flex items-center gap-1.5 whitespace-nowrap text-xs outline-none transition-colors hover:text-fg-1', value ? 'text-fg-3' : 'text-fg-3/60')
+          : cn(PILL, !value && 'text-fg-3')}
+      >
+        <SvgIcon name="calendar" size={compact ? 16 : 12} />
+        {compact ? (value && shortLabel(value)) : (value ? label(value) : 'Datum')}
       </PopoverTrigger>
-      <PopoverContent align="start" className="pointer-events-auto w-auto gap-0 p-0">
+      <PopoverContent align={compact ? 'end' : 'start'} className="pointer-events-auto w-auto gap-0 p-0">
         <div className="flex flex-col p-1.5">
           {shortcuts.map((s) => (
             <button key={s.label} onClick={() => pick(s.v)}

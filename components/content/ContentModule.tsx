@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { Fragment, useEffect, useRef, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Checkbox } from '@/components/ui/Checkbox'
@@ -13,7 +13,8 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { cn } from '@/lib/utils'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { NieuwePostDrawer } from './NieuwePostDrawer'
-import { updatePostStatus, updatePostDate } from '@/app/(app)/content/actions'
+import { ContentPlannenDrawer } from './ContentPlannenDrawer'
+import { updatePostStatus, reorderPostInDay } from '@/app/(app)/content/actions'
 import type { Post, PostStatus, PostType } from '@/types/post'
 import { STATUS_ICON, STATUS_LABEL, STATUS_ORDER } from '@/types/post'
 import type { Klant } from '@/types/klant'
@@ -96,6 +97,16 @@ function getMonthCalendar(year: number, month: number): Date[][] {
   return weeks
 }
 
+// Volgorde binnen een dag: posities eerst, null (ongeordend) achteraan. Ties houden
+// de invoervolgorde (= query-volgorde op created_at) dankzij stabiele JS-sort.
+// Belangrijk: gelijk → 0 teruggeven, niet Infinity-Infinity=NaN (NaN maakt sort
+// ongedefinieerd en husselt de volgorde).
+function byPosition(a: Post, b: Post): number {
+  const pa = a.position ?? Infinity
+  const pb = b.position ?? Infinity
+  return pa === pb ? 0 : pa - pb
+}
+
 function groupByDate(posts: Post[]): Map<string, Post[]> {
   const map = new Map<string, Post[]>()
   for (const p of posts) {
@@ -104,6 +115,7 @@ function groupByDate(posts: Post[]): Map<string, Post[]> {
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(p)
   }
+  for (const list of map.values()) list.sort(byPosition)
   return map
 }
 
@@ -122,11 +134,18 @@ interface DragState {
 interface DragHandlers {
   draggingPostId: string | null
   dragOverKey: string | null
+  dropIndex: number | null          // insert-positie binnen de dag waar overheen gesleept wordt
   onPostDragStart: (postId: string, fromKey: string, type: 'week' | 'kanban') => void
   onPostDragEnd: () => void
   onZoneDragOver: (e: React.DragEvent, key: string) => void
+  onCardDragOver: (e: React.DragEvent, key: string, index: number) => void  // index op basis van boven/onderhelft
   onZoneDrop: (e: React.DragEvent, key: string) => void
   onZoneDragLeave: (e: React.DragEvent) => void
+}
+
+// Grijze invoeg-indicator tussen posts tijdens het slepen (volgt het ring-thema).
+function DropLine() {
+  return <div className="h-0.5 rounded-full bg-border-strong" />
 }
 
 // ─── StatusIcon ───────────────────────────────────────────────────────────────
@@ -181,13 +200,15 @@ function StatusSelect({ postId, current }: { postId: string; current: PostStatus
 interface PostCardProps {
   post: Post
   isDragging?: boolean
+  hideDate?: boolean        // week-view: dag staat al in de kolomkop, datum is overbodig
   onDragStart?: () => void
   onDragEnd?: () => void
+  onDragOver?: (e: React.DragEvent) => void
   onClick?: () => void
 }
 
-function PostCard({ post, isDragging = false, onDragStart, onDragEnd, onClick }: PostCardProps) {
-  const dateLabel = post.scheduled_at ? fmtDate(post.scheduled_at) : null
+function PostCard({ post, isDragging = false, hideDate = false, onDragStart, onDragEnd, onDragOver, onClick }: PostCardProps) {
+  const dateLabel = !hideDate && post.scheduled_at ? fmtDate(post.scheduled_at) : null
   const assignees = post.assignees ?? []
 
   return (
@@ -198,34 +219,35 @@ function PostCard({ post, isDragging = false, onDragStart, onDragEnd, onClick }:
         onDragStart?.()
       }}
       onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
       onClick={onClick}
       className={cn(
-        'bg-bg-2 rounded-lg p-2.5 cursor-pointer hover:bg-bg-3 transition-colors border border-border select-none',
-        isDragging && 'opacity-40 scale-95',
+        'bg-bg-4 rounded-sm p-2 flex flex-col gap-1.5 cursor-pointer hover:bg-bg-3 transition-colors select-none',
+        isDragging && 'opacity-40',
       )}
     >
       {/* Row 1: type label + avatar stack */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          <TypeIcon type={post.type} size={11} />
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <TypeIcon type={post.type} size={14} />
           {TYPE_CONFIG[post.type].label}
         </span>
 
         {assignees.length > 0 ? (
           <AvatarStack
             people={assignees.map((a) => ({ key: a.id, src: a.avatar_url, name: a.full_name ?? undefined }))}
-            size={20}
-            overlap={6}
+            size={14}
+            overlap={4}
           />
         ) : (
-          dateLabel && <span className="text-xs text-muted-foreground">{dateLabel}</span>
+          dateLabel && <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">{dateLabel}</span>
         )}
       </div>
 
       {/* Row 2: status + klant + date (when avatars are shown) */}
       <div className="flex items-center gap-1.5">
-        <StatusIcon status={post.status} size={11} />
-        <span className="text-xs text-foreground truncate flex-1">{post.klant_naam ?? '—'}</span>
+        <StatusIcon status={post.status} size={16} />
+        <span className="text-sm text-foreground truncate flex-1">{post.klant_naam ?? '—'}</span>
         {assignees.length > 0 && dateLabel && (
           <span className="text-xs text-muted-foreground shrink-0">{dateLabel}</span>
         )}
@@ -236,12 +258,13 @@ function PostCard({ post, isDragging = false, onDragStart, onDragEnd, onClick }:
 
 // ─── MaandView ────────────────────────────────────────────────────────────────
 
-function MaandView({ posts, currentDate, onAdd, drag, onEdit }: {
+function MaandView({ posts, currentDate, onAdd, drag, onEdit, onOpenWeek }: {
   posts: Post[]
   currentDate: Date
   onAdd: (date?: string) => void
   drag: DragHandlers
   onEdit: (post: Post) => void
+  onOpenWeek: (dateKey: string) => void
 }) {
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -268,27 +291,30 @@ function MaandView({ posts, currentDate, onAdd, drag, onEdit }: {
               const inMonth = day.getMonth() === month
               const isToday = key === today
               const isOver = drag.dragOverKey === key
-              const overflow = dayPosts.length > 3 ? dayPosts.length - 3 : 0
+              // Past in een rij van vaste hoogte: 3 posts, of 2 posts + ghost als er meer zijn.
+              const visible = dayPosts.length > 3 ? dayPosts.slice(0, 2) : dayPosts
+              const overflow = dayPosts.length - visible.length
 
               return (
                 <div
                   key={key}
                   className={cn(
-                    'border-r border-border last:border-r-0 p-2 flex flex-col gap-1 group transition-colors',
+                    'border-r border-border last:border-r-0 p-2 flex flex-col gap-0.5 group overflow-hidden transition-[opacity,box-shadow,background-color] duration-200 ease-strong',
                     !inMonth && 'opacity-35',
-                    isOver && 'bg-muted/20',
+                    isOver && 'ring-2 ring-inset ring-border-strong bg-bg-3',
                   )}
                   onDragOver={(e) => drag.onZoneDragOver(e, key)}
                   onDragLeave={drag.onZoneDragLeave}
                   onDrop={(e) => drag.onZoneDrop(e, key)}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={cn(
-                      'text-xs tabular-nums',
-                      isToday ? 'font-bold text-foreground' : 'text-muted-foreground',
-                    )}>
-                      {day.getDate()}
-                    </span>
+                    {isToday ? (
+                      <span className="flex size-[18px] items-center justify-center rounded-full bg-primary text-[11px] font-medium tabular-nums text-primary-foreground">
+                        {day.getDate()}
+                      </span>
+                    ) : (
+                      <span className="text-xs tabular-nums text-muted-foreground">{day.getDate()}</span>
+                    )}
                     <button
                       type="button"
                       onClick={() => onAdd(key)}
@@ -298,27 +324,38 @@ function MaandView({ posts, currentDate, onAdd, drag, onEdit }: {
                     </button>
                   </div>
 
-                  {dayPosts.slice(0, 3).map((p) => (
-                    <div
-                      key={p.id}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.effectAllowed = 'move'
-                        drag.onPostDragStart(p.id, key, 'week')
-                      }}
-                      onDragEnd={drag.onPostDragEnd}
-                      onClick={(e) => { e.stopPropagation(); onEdit(p) }}
-                      className={cn(
-                        'bg-bg-2 flex items-center gap-1 rounded px-1 py-0.5 hover:bg-bg-3 cursor-pointer select-none transition-opacity',
-                        drag.draggingPostId === p.id && 'opacity-40',
-                      )}
-                    >
-                      <StatusIcon status={p.status} size={10} />
-                      <span className="text-sm font-medium truncate">{p.klant_naam ?? '—'}</span>
-                    </div>
+                  {visible.map((p, index) => (
+                    <Fragment key={p.id}>
+                      {isOver && drag.dropIndex === index && <DropLine />}
+                      <div
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'move'
+                          drag.onPostDragStart(p.id, key, 'week')
+                        }}
+                        onDragEnd={drag.onPostDragEnd}
+                        onDragOver={(e) => drag.onCardDragOver(e, key, index)}
+                        onClick={(e) => { e.stopPropagation(); onEdit(p) }}
+                        className={cn(
+                          'bg-bg-2 flex items-center gap-1 rounded px-1 py-0.5 hover:bg-bg-3 cursor-pointer select-none transition-opacity',
+                          drag.draggingPostId === p.id && 'opacity-40',
+                        )}
+                      >
+                        <StatusIcon status={p.status} size={14} />
+                        <span className="text-sm font-medium truncate">{p.klant_naam ?? '—'}</span>
+                      </div>
+                    </Fragment>
                   ))}
+                  {/* invoegen achteraan (lege ruimte of onder de laatste kaart) */}
+                  {isOver && (drag.dropIndex === null || drag.dropIndex >= visible.length) && <DropLine />}
                   {overflow > 0 && (
-                    <span className="text-xs text-muted-foreground px-1">+{overflow} posts</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onOpenWeek(key) }}
+                      className="self-start inline-flex items-center rounded border border-dashed border-border-strong/50 px-1.5 text-[11px] leading-5 text-muted-foreground hover:border-border-strong hover:text-foreground select-none"
+                    >
+                      +{overflow} {overflow === 1 ? 'post' : 'posts'}
+                    </button>
                   )}
                 </div>
               )
@@ -341,55 +378,77 @@ function WeekView({ posts, currentDate, onAdd, drag, onEdit }: {
 }) {
   const days = getWeekDays(currentDate)
   const byDate = groupByDate(posts)
+  const today = toLocalDateStr(new Date())
+  const keys = days.map(toLocalDateStr)
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      {days.map((day, di) => {
-        const key = toLocalDateStr(day)
-        const dayPosts = byDate.get(key) ?? []
-        const label = `${DAYS_NL_LONG[di]} ${day.getDate()} ${MONTHS_NL[day.getMonth()].toLowerCase()}`
-        const isOver = drag.dragOverKey === key
-
-        return (
-          <div
-            key={key}
-            className={cn(
-              'flex-1 border-r border-border last:border-r-0 flex flex-col min-w-0 transition-colors',
-              isOver && 'bg-muted/20',
-            )}
-            onDragOver={(e) => drag.onZoneDragOver(e, key)}
-            onDragLeave={drag.onZoneDragLeave}
-            onDrop={(e) => drag.onZoneDrop(e, key)}
-          >
-            {/* Column header */}
-            <div className="px-3 py-2.5 border-b border-border shrink-0">
-              <span className="text-xs text-muted-foreground">{label}</span>
-            </div>
-
-            {/* Posts */}
-            <div className="flex-1 overflow-auto p-2 flex flex-col gap-2">
-              {dayPosts.map((p) => (
-                <PostCard
-                  key={p.id}
-                  post={p}
-                  isDragging={drag.draggingPostId === p.id}
-                  onDragStart={() => drag.onPostDragStart(p.id, key, 'week')}
-                  onDragEnd={drag.onPostDragEnd}
-                  onClick={() => onEdit(p)}
-                />
-              ))}
-
-              <button
-                onClick={() => onAdd(key)}
-                className="w-full rounded-lg border border-dashed border-border p-2.5 flex items-center gap-2 text-muted-foreground hover:border-ring hover:text-foreground transition-colors text-xs shrink-0"
-              >
-                <SvgIcon name="plus" size={12} />
-                Nieuwe post
-              </button>
-            </div>
+    <div className="flex flex-1 flex-col overflow-hidden rounded-md border border-border">
+      {/* Day headers */}
+      <div className="flex shrink-0">
+        {days.map((day, di) => (
+          <div key={keys[di]} className="flex-1 min-w-0 border border-border bg-border-subtle p-1.5">
+            <span className={cn('block truncate text-xs', keys[di] === today ? 'text-foreground' : 'text-muted-foreground')}>
+              {`${DAYS_NL_LONG[di]} ${day.getDate()} ${MONTHS_NL[day.getMonth()].toLowerCase()}`}
+            </span>
           </div>
-        )
-      })}
+        ))}
+      </div>
+
+      {/* Day columns */}
+      <div className="flex flex-1 overflow-hidden">
+        {days.map((day, di) => {
+          const key = keys[di]
+          const dayPosts = byDate.get(key) ?? []
+          const isOver = drag.dragOverKey === key
+
+          return (
+            <div
+              key={key}
+              className="flex flex-1 min-w-0 flex-col overflow-hidden border border-border"
+            >
+              <div
+                className="flex flex-1 flex-col gap-1 overflow-auto p-1.5"
+                onDragOver={(e) => drag.onZoneDragOver(e, key)}
+                onDragLeave={drag.onZoneDragLeave}
+                onDrop={(e) => drag.onZoneDrop(e, key)}
+              >
+                {dayPosts.map((p, index) => (
+                  <Fragment key={p.id}>
+                    {isOver && drag.dropIndex === index && <DropLine />}
+                    <PostCard
+                      post={p}
+                      hideDate
+                      isDragging={drag.draggingPostId === p.id}
+                      onDragStart={() => drag.onPostDragStart(p.id, key, 'week')}
+                      onDragEnd={drag.onPostDragEnd}
+                      onDragOver={(e) => drag.onCardDragOver(e, key, index)}
+                      onClick={() => onEdit(p)}
+                    />
+                  </Fragment>
+                ))}
+
+                {/* Invoegen achteraan, of — als er nog niets staat — de toevoeg-knop wordt de drop-indicator */}
+                {isOver && dayPosts.length > 0 && (drag.dropIndex === null || drag.dropIndex >= dayPosts.length) && <DropLine />}
+
+                {isOver && dayPosts.length === 0 ? (
+                  <div className="flex w-full shrink-0 items-center gap-1.5 rounded-sm bg-bg-4 px-2 py-1.5 text-xs text-foreground">
+                    <SvgIcon name="circle-dashed" size={14} />
+                    Post hier
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => onAdd(key)}
+                    className="flex w-full shrink-0 items-center gap-1.5 rounded-sm border border-dashed border-bg-4 px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
+                  >
+                    <SvgIcon name="plus" size={14} />
+                    Nieuwe post
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -545,6 +604,7 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
   const [view, setView] = useState<View>('maand')
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
   const [modalOpen, setModalOpen] = useState(false)
+  const [plannenOpen, setPlannenOpen] = useState(false)
   const [defaultDate, setDefaultDate] = useState<string | undefined>()
   const [editingPost, setEditingPost] = useState<Post | null>(null)
 
@@ -556,7 +616,15 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
   const draggingRef = useRef<DragState | null>(null)
   const [draggingPostId, setDraggingPostId] = useState<string | null>(null)
   const [dragOverKey, setDragOverKey] = useState<string | null>(null)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
+  // Ref-spiegel van dropIndex: drop leest 'm synchroon (state is dan nog niet geflusht).
+  const dropIndexRef = useRef<number | null>(null)
   const [, startTransition] = useTransition()
+
+  function setDrop(index: number | null) {
+    dropIndexRef.current = index
+    setDropIndex(index)
+  }
 
   function handlePostDragStart(postId: string, fromKey: string, type: 'week' | 'kanban') {
     draggingRef.current = { postId, fromKey, type }
@@ -567,12 +635,27 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
     draggingRef.current = null
     setDraggingPostId(null)
     setDragOverKey(null)
+    setDrop(null)
   }
 
+  // Lege celruimte → invoegen achteraan. Alleen reageren als de cel zélf het doel is,
+  // niet wanneer het event vanuit een kaart naar boven bubbelt (die zet een exacte index).
   function handleZoneDragOver(e: React.DragEvent, key: string) {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     if (dragOverKey !== key) setDragOverKey(key)
+    if (e.target === e.currentTarget) setDrop(null)
+  }
+
+  // Boven een kaart: boven-/onderhelft bepaalt of de post ervóór of erná landt.
+  function handleCardDragOver(e: React.DragEvent, key: string, index: number) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    const rect = e.currentTarget.getBoundingClientRect()
+    const after = e.clientY > rect.top + rect.height / 2
+    const idx = index + (after ? 1 : 0)
+    if (dragOverKey !== key) setDragOverKey(key)
+    if (dropIndexRef.current !== idx) setDrop(idx)
   }
 
   function handleZoneDragLeave(e: React.DragEvent) {
@@ -585,24 +668,42 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
   function handleZoneDrop(e: React.DragEvent, toKey: string) {
     e.preventDefault()
     const d = draggingRef.current
-    if (!d || d.fromKey === toKey) {
+    if (!d) { handlePostDragEnd(); return }
+
+    if (d.type === 'kanban') {
+      if (d.fromKey !== toKey) {
+        const newStatus = toKey as PostStatus
+        const oldStatus = d.fromKey as PostStatus
+        setLocalPosts((prev) => prev.map((p) =>
+          p.id === d.postId ? { ...p, status: newStatus } : p,
+        ))
+        startTransition(() => { updatePostStatus(d.postId, newStatus, oldStatus) })
+      }
       handlePostDragEnd()
       return
     }
 
-    if (d.type === 'kanban') {
-      const newStatus = toKey as PostStatus
-      const oldStatus = d.fromKey as PostStatus
-      setLocalPosts((prev) => prev.map((p) =>
-        p.id === d.postId ? { ...p, status: newStatus } : p,
-      ))
-      startTransition(() => { updatePostStatus(d.postId, newStatus, oldStatus) })
-    } else {
-      setLocalPosts((prev) => prev.map((p) =>
-        p.id === d.postId ? { ...p, scheduled_at: toKey } : p,
-      ))
-      startTransition(() => { updatePostDate(d.postId, toKey) })
-    }
+    // Week/maand: herorden naar de exacte invoegplek op dag `toKey`.
+    const displayed = localPosts
+      .filter((p) => p.scheduled_at?.slice(0, 10) === toKey)
+      .sort(byPosition)
+    const k = dropIndexRef.current ?? displayed.length
+    const movedIdx = displayed.findIndex((p) => p.id === d.postId)
+    const without = displayed.filter((p) => p.id !== d.postId)
+    // Stond de post al vóór het invoegpunt in deze dag? Dan schuift het punt één op.
+    const insertAt = movedIdx !== -1 && movedIdx < k ? k - 1 : k
+    const orderedIds = [
+      ...without.slice(0, insertAt).map((p) => p.id),
+      d.postId,
+      ...without.slice(insertAt).map((p) => p.id),
+    ]
+
+    setLocalPosts((prev) => prev.map((p) => {
+      const i = orderedIds.indexOf(p.id)
+      if (i === -1) return p
+      return p.id === d.postId ? { ...p, position: i, scheduled_at: toKey } : { ...p, position: i }
+    }))
+    startTransition(() => { reorderPostInDay(d.postId, toKey, orderedIds) })
 
     handlePostDragEnd()
   }
@@ -618,9 +719,11 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
   const drag: DragHandlers = {
     draggingPostId,
     dragOverKey,
+    dropIndex,
     onPostDragStart: handlePostDragStart,
     onPostDragEnd: handlePostDragEnd,
     onZoneDragOver: handleZoneDragOver,
+    onCardDragOver: handleCardDragOver,
     onZoneDrop: handleZoneDrop,
     onZoneDragLeave: handleZoneDragLeave,
   }
@@ -664,7 +767,7 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
         iconName="layers"
         actions={
           <>
-            <Button variant="outline" size="sm" className="gap-1.5">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setPlannenOpen(true)}>
               <SvgIcon name="calendar" size={13} />
               Content plannen
             </Button>
@@ -708,7 +811,7 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
 
       {/* ── View content ────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-h-0">
-        {view === 'maand' && <MaandView posts={localPosts} currentDate={currentDate} onAdd={openAdd} drag={drag} onEdit={openEdit} />}
+        {view === 'maand' && <MaandView posts={localPosts} currentDate={currentDate} onAdd={openAdd} drag={drag} onEdit={openEdit} onOpenWeek={(key) => { setCurrentDate(parseDate(key)); setView('week') }} />}
         {view === 'week' && <WeekView posts={localPosts} currentDate={currentDate} onAdd={openAdd} drag={drag} onEdit={openEdit} />}
         {view === 'kanban' && <KanbanView posts={localPosts} currentDate={currentDate} onAdd={openAdd} onEdit={openEdit} onMove={handleKanbanMove} />}
         {view === 'lijst' && <LijstView posts={localPosts} onAdd={openAdd} onEdit={openEdit} />}
@@ -722,6 +825,12 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
         teamleden={teamleden}
         defaultDate={defaultDate}
         post={editingPost ?? undefined}
+      />
+
+      <ContentPlannenDrawer
+        open={plannenOpen}
+        onOpenChange={setPlannenOpen}
+        klanten={klanten}
       />
     </div>
   )

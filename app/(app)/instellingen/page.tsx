@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/layout/PageHeader"
+import { requireFeature } from "@/lib/permissions.server"
 import { Card } from "@/components/ui/Card"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { fmtDateTime } from "@/lib/dates"
@@ -15,31 +16,15 @@ type Identity = {
   profiles: { full_name: string | null } | null
 }
 
-type LogRow = {
-  id: string
-  input_text: string
-  reply_text: string | null
-  tool_calls: { name: string; input: unknown }[] | null
-  created_at: string
-  profiles: { full_name: string | null } | null
-}
-
 export default async function InstellingenPage() {
+  await requireFeature('instellingen')
   const admin = createAdminClient()
-  const [identitiesRes, logsRes] = await Promise.all([
-    admin
-      .from("assistant_identities")
-      .select("telegram_user_id, label, created_at, profiles(full_name)")
-      .order("created_at", { ascending: false }),
-    admin
-      .from("assistant_log")
-      .select("id, input_text, reply_text, tool_calls, created_at, profiles(full_name)")
-      .order("created_at", { ascending: false })
-      .limit(50),
-  ])
+  const { data: identitiesData } = await admin
+    .from("assistant_identities")
+    .select("telegram_user_id, label, created_at, profiles(full_name)")
+    .order("created_at", { ascending: false })
 
-  const identities = (identitiesRes.data ?? []) as unknown as Identity[]
-  const logs = (logsRes.data ?? []) as unknown as LogRow[]
+  const identities = (identitiesData ?? []) as unknown as Identity[]
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -78,46 +63,6 @@ export default async function InstellingenPage() {
                     <span className="text-[13px] text-fg-3 shrink-0">
                       {fmtDateTime(it.created_at)}
                     </span>
-                  </div>
-                ))}
-              </Card>
-            )}
-          </section>
-
-          {/* Assistent-logboek */}
-          <section className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-sm font-medium text-fg-1">Assistent-logboek</h2>
-              <p className="text-[13px] text-fg-3">Laatste 50 interacties met de AI-assistent.</p>
-            </div>
-            {logs.length === 0 ? (
-              <Card className="bg-bg-0 p-4">
-                <p className="m-0 text-[13px] text-fg-3">Nog geen interacties.</p>
-              </Card>
-            ) : (
-              <Card className="bg-bg-0 gap-0 p-0 overflow-hidden">
-                {logs.map((log, i) => (
-                  <div
-                    key={log.id}
-                    className={`flex flex-col gap-1 px-4 py-3 ${i > 0 ? "border-t border-border-subtle" : ""}`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[13px] font-medium text-fg-2 truncate">
-                        {log.profiles?.full_name ?? "Onbekend"}
-                      </span>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {log.tool_calls && log.tool_calls.length > 0 ? (
-                          <span className="text-[12px] text-fg-3">
-                            {log.tool_calls.length} {log.tool_calls.length === 1 ? "actie" : "acties"}
-                          </span>
-                        ) : null}
-                        <span className="text-[13px] text-fg-3">{fmtDateTime(log.created_at)}</span>
-                      </div>
-                    </div>
-                    <p className="m-0 text-sm text-fg-1">{log.input_text}</p>
-                    {log.reply_text ? (
-                      <p className="m-0 text-[13px] text-fg-3 whitespace-pre-wrap">{log.reply_text}</p>
-                    ) : null}
                   </div>
                 ))}
               </Card>

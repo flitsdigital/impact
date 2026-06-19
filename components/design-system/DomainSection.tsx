@@ -94,23 +94,25 @@ const DEMO_PROJECT: Project & { klanten?: { id: string; naam: string } | null } 
 const DEMO_LEADS: Lead[] = [
   {
     id: 'l1', bedrijfsnaam: 'Bakkerij Visser', contactpersoon: 'Pieter Visser',
-    email: 'info@bakkerijvisser.nl', telefoon: null, bron: 'website', waarde: 2500,
+    email: 'info@bakkerijvisser.nl', telefoon: null, bron: 'website', dienst: 'website', waarde: 2500,
     notities: null, status: 'offerte',
     created_at: '2026-06-01T12:00:00Z', updated_at: '2026-06-01T12:00:00Z',
+    assignees: [{ id: '1', full_name: 'Jordi Klavers', avatar_url: null, email: null }],
   },
   {
     id: 'l2', bedrijfsnaam: 'Garage Jansen', contactpersoon: null,
-    email: null, telefoon: null, bron: 'referral', waarde: null,
+    email: null, telefoon: null, bron: 'referral', dienst: null, waarde: null,
     notities: null, status: 'nieuw',
     created_at: '2026-06-08T12:00:00Z', updated_at: '2026-06-08T12:00:00Z',
+    assignees: [],
   },
 ]
 
 // ─── Sectie ───────────────────────────────────────────────────────────────────
 
 const demoMembers = [
-  { id: '1', full_name: 'Jordi Klavers', avatar_url: null },
-  { id: '2', full_name: 'Sam de Vries', avatar_url: null },
+  { id: '1', full_name: 'Jordi Klavers', avatar_url: null, email: null },
+  { id: '2', full_name: 'Sam de Vries', avatar_url: null, email: null },
 ]
 
 export function DomainSection() {
@@ -187,7 +189,7 @@ export function DomainSection() {
       >
         <div className="flex gap-3">
           {DEMO_LEADS.map((l) => (
-            <div key={l.id} className="w-64"><LeadKaart lead={l} isDragging={false} /></div>
+            <div key={l.id} className="w-64"><LeadKaart lead={l} isDragging={false} team={demoMembers} onToggleAssignee={() => {}} /></div>
           ))}
         </div>
         <div className="w-full h-40 overflow-hidden rounded-lg border border-border-subtle">

@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/permissions.server'
 import { KlantenTable } from '@/components/klanten/KlantenTable'
 import type { Klant } from '@/types/klant'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 export default async function KlantenPage() {
+  await requireFeature('klanten')
   const supabase = await createClient()
   const { data: klanten } = await supabase
     .from('klanten')

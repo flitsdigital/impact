@@ -10,7 +10,7 @@ const patchSchema = z.object({
   deadline:   z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal('')]).nullable().optional(),
   prioriteit: z.enum(['urgent', 'hoog', 'normaal', 'laag']).optional(),
   done:       z.boolean().optional(),
-  assignees:  z.array(z.string().uuid()).optional(),
+  assignees:  z.array(z.string().guid()).optional(),
 })
 
 // PATCH /api/todos/[id]  body: elk veld optioneel; `assignees` vervangt de set.

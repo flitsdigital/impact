@@ -50,7 +50,10 @@ async function resolveMediaUrls(
 }
 
 const postSchema = z.object({
-  klant_id:     z.string().uuid().nullable().optional(),
+  // .guid() (loose 8-4-4-4-12), niet .uuid(): Postgres' uuid-type accepteert élke
+  // hex in dat formaat, ook geïmporteerde ids met een niet-RFC version/variant-nibble.
+  // zod v4's .uuid() is strikter dan de DB en weigerde anders bestaande klant-ids.
+  klant_id:     z.string().guid().nullable().optional(),
   status:       z.enum(['te_doen', 'bezig', 'klaar_voor_feedback', 'akkoord', 'gepost']).default('te_doen'),
   type:         z.enum(['foto', 'video', 'reel', 'carousel']).default('foto'),
   caption:      z.string().nullable().optional(),
@@ -109,6 +112,48 @@ export async function createPost(
 
   revalidatePath('/content')
   return { success: true, id: data.id }
+}
+
+// ─── Bulk plannen (kalender-schilder) ─────────────────────────────────────────
+// Maakt in één keer lege drafts (status te_doen) aan voor één klant: per
+// geschilderde dag één post met zijn type. Caption/media vul je later in.
+
+const bulkScheduleSchema = z.object({
+  klant_id: z.string().guid(),
+  slots: z
+    .array(z.object({ date: z.string(), type: z.enum(['foto', 'video']) }))
+    .min(1),
+})
+
+export async function bulkSchedulePosts(input: {
+  klant_id: string
+  slots: { date: string; type: 'foto' | 'video' }[]
+}): Promise<{ error?: string; count?: number }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  const parsed = bulkScheduleSchema.safeParse(input)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validatiefout' }
+
+  const rows = parsed.data.slots.map((s) => ({
+    klant_id:     parsed.data.klant_id,
+    status:       'te_doen' as const,
+    type:         s.type,
+    scheduled_at: s.date,
+    media_urls:   [] as string[],
+  }))
+
+  const { data, error } = await supabase.from('posts').insert(rows).select('id')
+  if (error) return { error: error.message }
+
+  if (data?.length) {
+    await supabase.from('post_logs').insert(
+      data.map((d) => ({ post_id: d.id, action: 'created', to_status: 'te_doen' })),
+    )
+  }
+
+  revalidatePath('/content')
+  return { count: data?.length ?? 0 }
 }
 
 // ─── Update post (metadata only) ─────────────────────────────────────────────
@@ -201,6 +246,36 @@ export async function updatePostDate(
   if (error) return { error: error.message }
 
   await supabase.from('post_logs').insert({ post_id: id, action: 'rescheduled' })
+
+  revalidatePath('/content')
+  return {}
+}
+
+// ─── Herorden post binnen/naar een dag ─────────────────────────────────────────
+// `orderedIds` is de gewenste volgorde van álle posts op `toDate` (incl. de
+// versleepte post). We hernummeren die dag met integer-posities (0,1,2,…) en
+// zetten meteen de datum van de versleepte post. Een dag heeft maar een handvol
+// posts, dus de paar losse updates zijn verwaarloosbaar.
+export async function reorderPostInDay(
+  movedId: string,
+  toDate: string,
+  orderedIds: string[],
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  const results = await Promise.all(
+    orderedIds.map((id, i) =>
+      supabase
+        .from('posts')
+        .update(id === movedId ? { position: i, scheduled_at: toDate } : { position: i })
+        .eq('id', id),
+    ),
+  )
+  const failed = results.find((r) => r.error)
+  if (failed?.error) return { error: failed.error.message }
+
+  await supabase.from('post_logs').insert({ post_id: movedId, action: 'rescheduled' })
 
   revalidatePath('/content')
   return {}

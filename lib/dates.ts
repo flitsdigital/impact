@@ -32,6 +32,20 @@ export function fmtDateTime(dateStr: string): string {
   })
 }
 
+// "14 dagen geleden", "2 maanden geleden", … via de native Intl-API.
+const RELATIVE_NL = new Intl.RelativeTimeFormat('nl-NL', { numeric: 'auto' })
+const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['year', 365 * 24 * 3600], ['month', 30 * 24 * 3600], ['week', 7 * 24 * 3600],
+  ['day', 24 * 3600], ['hour', 3600], ['minute', 60],
+]
+export function fmtRelative(dateStr: string): string {
+  const diffSec = (parseDate(dateStr).getTime() - Date.now()) / 1000
+  for (const [unit, sec] of RELATIVE_UNITS) {
+    if (Math.abs(diffSec) >= sec) return RELATIVE_NL.format(Math.round(diffSec / sec), unit)
+  }
+  return RELATIVE_NL.format(Math.round(diffSec / 60), 'minute')
+}
+
 export function isOverdue(dateStr: string): boolean {
   return new Date(dateStr.slice(0, 10) + 'T23:59:59') < new Date()
 }

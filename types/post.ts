@@ -43,6 +43,7 @@ export interface Post {
   caption: string | null
   media_urls: string[]         // geordend; volgorde = volgorde van de afbeeldingen
   scheduled_at: string | null  // ISO date "YYYY-MM-DD"
+  position: number | null      // volgorde binnen een dag; null = ongeordend (sorteert op created_at)
   published_at: string | null
   assignee_id: string | null   // legacy single-assignee column, kept for DB compat
   assignees?: TeamMember[]     // from post_assignees join (supports multiple)

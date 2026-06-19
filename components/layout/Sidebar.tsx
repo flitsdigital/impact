@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { SvgIcon } from "@/components/ui/SvgIcon"
+import { usePermissions } from "@/components/permissions/PermissionsProvider"
+import { NAV_FEATURE } from "@/lib/permissions"
 
 const NAV = {
   primary: [
@@ -23,6 +25,7 @@ const NAV = {
   footer: [
     { href: "/todos", label: "Taken", svgName: "list-check", count: 7, kbds: ["⌘", "T"] },
     { href: "/gebruikers", label: "Gebruikers", svgName: "smile" },
+    { href: "/logboek", label: "Logboek", svgName: "list" },
     { href: "/instellingen", label: "Instellingen", svgName: "settings" },
   ],
 }
@@ -71,6 +74,7 @@ function NavGroup({ label, items }: { label: string; items: { href: string; labe
 
   // localStorage pas na mount lezen om hydration-mismatch te voorkomen
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- bewuste sync vanuit externe store (localStorage) na mount
     if (localStorage.getItem(storageKey) === "closed") setOpen(false)
   }, [storageKey])
 
@@ -110,23 +114,36 @@ function NavGroup({ label, items }: { label: string; items: { href: string; labe
 }
 
 export function Sidebar() {
+  const { perms } = usePermissions()
+
+  // Verberg items met level 0 (geen toegang). Items zonder feature-mapping
+  // (Inbox, Logboek) blijven altijd zichtbaar.
+  const visible = <T extends { href: string }>(items: T[]) =>
+    items.filter((item) => {
+      const feature = NAV_FEATURE[item.href]
+      return !feature || (perms[feature] ?? 0) > 0
+    })
+
+  const klanten = visible(NAV.klanten)
+  const projecten = visible(NAV.projecten)
+
   return (
     <aside className="flex flex-col w-[var(--sidebar-w)] min-w-[var(--sidebar-w)] border-r border-border-subtle bg-bg-0 p-3 h-full overflow-hidden">
       {/* Top section — scrolls if viewport is too short */}
       <div className="flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="flex flex-col gap-0.5">
-          {NAV.primary.map((item) => (
+          {visible(NAV.primary).map((item) => (
             <NavRow key={item.href} {...item} />
           ))}
         </div>
 
-        <NavGroup label="Klanten" items={NAV.klanten} />
-        <NavGroup label="Projecten" items={NAV.projecten} />
+        {klanten.length > 0 && <NavGroup label="Klanten" items={klanten} />}
+        {projecten.length > 0 && <NavGroup label="Projecten" items={projecten} />}
       </div>
 
       {/* Footer — always anchored at the bottom */}
       <div className="flex flex-col gap-0.5 pt-4 border-t border-border-subtle shrink-0">
-        {NAV.footer.map((item) => (
+        {visible(NAV.footer).map((item) => (
           <NavRow key={item.href} {...item} />
         ))}
       </div>

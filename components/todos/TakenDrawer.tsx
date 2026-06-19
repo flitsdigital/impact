@@ -13,7 +13,11 @@ import { AssigneeDropdown } from '@/components/todos/AssigneeDropdown'
 import type { TaskPriority } from '@/types/project'
 
 export function TakenDrawer() {
-  const { open, loading, todos, team, closeDrawer, openDrawer, add, toggle, patch, assign, remove } = useTakenStore()
+  const { open, loading, todos, team, load, closeDrawer, openDrawer, add, toggle, patch, assign, remove } = useTakenStore()
+
+  // Eager prefetch: de drawer zit in de (app)-layout en blijft gemount, dus dit
+  // draait één keer bij page load. Bij openen is de lijst er al → instant.
+  React.useEffect(() => { void load() }, [load])
 
   // Quick-add draft-state
   const [titel, setTitel] = React.useState('')
@@ -83,6 +87,7 @@ export function TakenDrawer() {
                 todo={t}
                 team={team}
                 onToggle={() => void toggle(t.id)}
+                onTitle={(v) => void patch(t.id, { titel: v })}
                 onDate={(v) => void patch(t.id, { deadline: v || null })}
                 onPriority={(v) => void patch(t.id, { prioriteit: v })}
                 onAssignToggle={(id) => {

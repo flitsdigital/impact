@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/permissions.server'
 import { ContentModule } from '@/components/content/ContentModule'
 import type { Post } from '@/types/post'
 import type { Klant } from '@/types/klant'
 import type { TeamMember } from '@/types/team'
 
 export default async function ContentPage() {
+  await requireFeature('content')
   const supabase = await createClient()
 
   const [
@@ -16,7 +18,9 @@ export default async function ContentPage() {
     supabase
       .from('posts')
       .select('*, klanten(naam)')
-      .order('scheduled_at', { ascending: true }),
+      .order('scheduled_at', { ascending: true })
+      .order('position', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true }),
     supabase
       .from('klanten')
       .select('id, naam')

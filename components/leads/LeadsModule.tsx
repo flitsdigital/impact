@@ -13,8 +13,9 @@ import { LeadKaart } from './LeadKaart'
 import { LeadsLijst } from './LeadsLijst'
 import { NieuweLeadDrawer } from './NieuweLeadDrawer'
 import type { Lead, LeadStatus } from '@/types/lead'
+import type { TeamMember } from '@/types/team'
 import { LEAD_COLUMNS } from '@/types/lead'
-import { moveLead } from '@/app/(app)/leads/actions'
+import { moveLead, setLeadAssignees } from '@/app/(app)/leads/actions'
 
 type View = 'kanban' | 'lijst'
 
@@ -25,9 +26,10 @@ const VIEWS: { value: View; icon: string; label: string }[] = [
 
 interface LeadsModuleProps {
   leads: Lead[]
+  team:  TeamMember[]
 }
 
-export function LeadsModule({ leads: initialLeads }: LeadsModuleProps) {
+export function LeadsModule({ leads: initialLeads, team }: LeadsModuleProps) {
   const router = useRouter()
   const [view, setView]               = useState<View>('kanban')
   const [searchQuery, setSearchQuery] = useState('')
@@ -45,6 +47,20 @@ export function LeadsModule({ leads: initialLeads }: LeadsModuleProps) {
 
   function handleCreated(lead: Lead) {
     setLocalLeads((prev) => [lead, ...prev])
+  }
+
+  function handleToggleAssignee(leadId: string, userId: string) {
+    let nextIds: string[] = []
+    setLocalLeads((prev) => prev.map((l) => {
+      if (l.id !== leadId) return l
+      const has = l.assignees.some((a) => a.id === userId)
+      const assignees = has
+        ? l.assignees.filter((a) => a.id !== userId)
+        : [...l.assignees, team.find((t) => t.id === userId)!].filter(Boolean)
+      nextIds = assignees.map((a) => a.id)
+      return { ...l, assignees }
+    }))
+    startTransition(() => { setLeadAssignees(leadId, nextIds) })
   }
 
   function openNieuweLead() {
@@ -119,6 +135,8 @@ export function LeadsModule({ leads: initialLeads }: LeadsModuleProps) {
               <LeadKaart
                 lead={lead}
                 isDragging={isDragging}
+                team={team}
+                onToggleAssignee={(userId) => handleToggleAssignee(lead.id, userId)}
                 onClick={() => router.push(`/leads/${lead.id}`)}
               />
             )}

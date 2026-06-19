@@ -14,7 +14,7 @@ const createSchema = z.object({
   notitie:    z.string().optional().nullable(),
   deadline:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Datum moet YYYY-MM-DD zijn').optional().nullable(),
   prioriteit: z.enum(['urgent', 'hoog', 'normaal', 'laag']).default('normaal'),
-  assignees:  z.array(z.string().uuid()).default([]),
+  assignees:  z.array(z.string().guid()).default([]),
 })
 
 // GET /api/todos?user_id=<uuid>&done=<true|false>

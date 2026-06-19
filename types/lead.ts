@@ -1,5 +1,8 @@
+import type { TeamMember } from '@/types/team'
+
 export type LeadStatus = 'nieuw' | 'contact' | 'offerte' | 'gewonnen' | 'verloren'
 export type LeadBron = 'website' | 'referral' | 'outbound' | 'overig'
+export type LeadDienst = 'social' | 'website' | 'webshop' | 'branding'
 export type ContactmomentType = 'gebeld' | 'gemaild' | 'meeting' | 'notitie'
 
 export interface Lead {
@@ -9,11 +12,13 @@ export interface Lead {
   email:          string | null
   telefoon:       string | null
   bron:           LeadBron
+  dienst:         LeadDienst | null
   waarde:         number | null
   notities:       string | null
   status:         LeadStatus
   created_at:     string
   updated_at:     string
+  assignees:      TeamMember[]
 }
 
 export interface LeadContactmoment {
@@ -63,6 +68,13 @@ export const BRON_LABEL: Record<LeadBron, string> = {
   referral: 'Referral',
   outbound: 'Outbound',
   overig:   'Overig',
+}
+
+export const DIENST_CONFIG: Record<LeadDienst, { label: string; iconName: string }> = {
+  social:   { label: 'Social media content', iconName: 'share' },
+  website:  { label: 'Website',               iconName: 'code' },
+  webshop:  { label: 'Webshop',               iconName: 'cart' },
+  branding: { label: 'Branding / Marketing',  iconName: 'megaphone' },
 }
 
 export const CONTACT_TYPE_CONFIG: Record<ContactmomentType, { label: string; iconName: string }> = {

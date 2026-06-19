@@ -11,6 +11,7 @@ const leadSchema = z.object({
   email:          z.string().optional().nullable(),
   telefoon:       z.string().optional().nullable(),
   bron:           z.enum(['website', 'referral', 'outbound', 'overig']).default('overig'),
+  dienst:         z.enum(['social', 'website', 'webshop', 'branding']).optional().nullable(),
   waarde:         z.coerce.number().nonnegative('Waarde kan niet negatief zijn').optional().nullable(),
   notities:       z.string().optional().nullable(),
 })
@@ -41,6 +42,7 @@ export async function createLead(
     email:          formData.get('email') || null,
     telefoon:       formData.get('telefoon') || null,
     bron:           formData.get('bron') || 'overig',
+    dienst:         formData.get('dienst') || null,
     waarde:         formData.get('waarde') || null,
     notities:       formData.get('notities') || null,
   }
@@ -60,7 +62,7 @@ export async function createLead(
   if (error) return { error: error.message }
 
   revalidateLeads()
-  return { success: true, lead: data as Lead }
+  return { success: true, lead: { ...data, assignees: [] } as Lead }
 }
 
 export async function updateLead(
@@ -71,6 +73,7 @@ export async function updateLead(
     email?: string | null
     telefoon?: string | null
     bron?: string
+    dienst?: string | null
     waarde?: number | null
     notities?: string | null
     status?: string
@@ -92,6 +95,39 @@ export async function updateLead(
 
 export async function moveLead(leadId: string, newStatus: string): Promise<{ error?: string }> {
   return updateLead(leadId, { status: newStatus })
+}
+
+// Vervangt de volledige set toegewezen teamleden. Spiegelt todos.setAssignees:
+// eerst upsert, daarna verwijderen, zodat een mislukte insert nooit alles wist.
+export async function setLeadAssignees(leadId: string, userIds: string[]): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  const parsed = z.array(z.string().guid()).safeParse(userIds)
+  if (!parsed.success) return { error: 'Ongeldige toewijzing' }
+  const ids = parsed.data
+
+  if (ids.length === 0) {
+    const { error } = await supabase.from('lead_assignees').delete().eq('lead_id', leadId)
+    if (error) return { error: error.message }
+    revalidateLeads(leadId)
+    return {}
+  }
+
+  const { error: insErr } = await supabase
+    .from('lead_assignees')
+    .upsert(ids.map((user_id) => ({ lead_id: leadId, user_id })), { onConflict: 'lead_id,user_id' })
+  if (insErr) return { error: insErr.message }
+
+  const { error: delErr } = await supabase
+    .from('lead_assignees')
+    .delete()
+    .eq('lead_id', leadId)
+    .not('user_id', 'in', `(${ids.join(',')})`)
+  if (delErr) return { error: delErr.message }
+
+  revalidateLeads(leadId)
+  return {}
 }
 
 export async function deleteLead(leadId: string): Promise<{ error?: string }> {

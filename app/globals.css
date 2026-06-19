@@ -37,6 +37,11 @@
   --radius-lg:   10px;
   --radius-pill: 100px;
   --radius-full: 999px;
+
+  /* Easing — sterkere curves dan de CSS-defaults (Emil/Ionic). Genereert ease-strong / ease-drawer utilities. */
+  --ease-strong: cubic-bezier(0.23, 1, 0.32, 1);        /* ease-out met punch: enter/exit, hover */
+  --ease-inout-strong: cubic-bezier(0.77, 0, 0.175, 1); /* on-screen beweging/morph */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);        /* iOS-achtige drawer-curve */
 }
 
 @font-face {
@@ -483,5 +488,18 @@ body {
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Toegankelijkheid: beweging kan misselijkheid geven. Behoud opacity/kleur (helpt begrip),
+   maar haal transform-/positie-beweging eruit door alles vrijwel instant te maken. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

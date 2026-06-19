@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/DropdownMenu"
 import { createClient } from "@/lib/supabase/client"
 import { Avatar } from "@/components/ui/Avatar"
+import { ProfielDrawer } from "@/components/profiel/ProfielDrawer"
 import { useAuthStore } from "@/store/auth"
 import { useTakenStore } from "@/store/taken"
 
@@ -19,6 +20,7 @@ export function TopBar() {
   const router = useRouter()
   const { user } = useAuthStore()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [profielOpen, setProfielOpen] = useState(false)
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -79,7 +81,7 @@ export function TopBar() {
               <p className="m-0 mt-0.5 text-[12px] text-fg-3">{user?.email}</p>
             </div>
 
-            <DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setProfielOpen(true)}>
               <SvgIcon name="user" size={14} />
               Profiel
             </DropdownMenuItem>
@@ -93,6 +95,8 @@ export function TopBar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ProfielDrawer open={profielOpen} onOpenChange={setProfielOpen} />
     </header>
   )
 }

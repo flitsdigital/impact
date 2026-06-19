@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/permissions.server'
 import { TakenModule } from '@/components/taken/TakenModule'
 import type { Project, Task, TaskWithRelations } from '@/types/project'
 
 export default async function TakenPage() {
+  await requireFeature('taken')
   const supabase = await createClient()
 
   const { data: rawProjects } = await supabase

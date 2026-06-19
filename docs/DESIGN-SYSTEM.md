@@ -53,6 +53,14 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 - Layout: `--topbar-h` 40px, `--sidebar-w` 247px.
 - Elevation: `--elev-popover`, `--elev-tooltip`.
 
+### Motion / easing
+
+- Curves (sterker dan de CSS-defaults): `ease-strong` `cubic-bezier(0.23,1,0.32,1)` voor enter/exit + hover · `ease-inout-strong` voor on-screen beweging/morph · `ease-drawer` voor drawers. Gebruik de Tailwind-utility (`ease-strong`), niet handgeschreven curves.
+- Duur: UI < 300ms. Knop-/press-feedback 100–160ms, popovers/tooltips 125–200ms, dropdowns/selects 150–250ms, modals/drawers 200–500ms. Keyboard-acties (command palette, shortcuts) niet animeren.
+- Animeer alleen `transform`/`opacity`/kleur; nooit `transition: all`/`transition-all` — benoem de properties.
+- Popovers schalen vanaf hun trigger (`origin-(--transform-origin)` / `origin-(--radix-…-transform-origin)`); modals blijven gecentreerd. Geen `scale(0)` — start op `scale(.95)` + opacity.
+- `prefers-reduced-motion` wordt globaal afgevangen in `globals.css` (beweging vrijwel instant).
+
 ### Datum & valuta (lib)
 
 | Helper | Pad | Gebruik |
@@ -80,7 +88,7 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `Input` / `Textarea` / `Label` | native props | Formuliervelden. Borderless inline-editors (titel in drawers) blijven bewust raw |
 | `Checkbox` | `checked`, `onCheckedChange` | base-ui checkbox met vinkje |
 | `Select` (+Trigger/Content/Item/Group/Value) | base-ui | Dropdowns in formulieren/filters; portal-popup |
-| `PillSelect` | `value`, `onChange`, `icon?`, children = `<option>`s | Compacte native select als pill; veilig in Drawers (OS-menu) |
+| `PillSelect` | `value`/`defaultValue`, `onChange?`, `variant?` (`pill`\|`input`), `icon?`, `name?`, children = `<option>`s | Native select, look `pill` (compact) of `input` (volle breedte); veilig in Drawers (OS-menu). Gebruik dit i.p.v. base-ui `Select` binnen een Drawer |
 | `DatePicker` | `value` ("YYYY-MM-DD"), `onChange`, `variant` (field/pill), `name?`, `clearable?` | Datumkeuze; `name` voor FormData-submits |
 | `Avatar` | `src?`, `name?`, `size?`, `style?` | Initialen-fallback |
 | `AvatarStack` | `people [{key,src?,name?}]`, `size`, `max=3`, `overlap`, `ringClass`, `showOverflow` | Gestapelde avatars met +N. Kaarten: `size 14, overlap 1.4`; PostCard: `20/6`; detail-meta: `18/4, ring-bg-1` |
@@ -89,6 +97,10 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `Table` (+Header/Body/Row/Head/Cell/Footer/Caption) | table-props | Datatabellen (zie KlantenTable) |
 | `SvgIcon` | `name`, `size=16`, `className` | Iconen uit `/public/icons` via CSS-mask (erft tekstkleur). `ICON_NAMES` exporteert de volledige lijst; rode iconen = placeholders |
 | `KanbanBoard<TItem>` | `columns`, `items`, `getItemId`, `getColKey`, `renderCard`, `onMove`, `onAddItem?` | Generiek bord; optimistische updates horen in de parent |
+| `LevelSelect` | `value` (0–3), `onChange`, `showLabels?`, `disabled?` | Rechten-niveau kiezen (Geen/Bekijken/Bewerken/Beheren). Voeding via `lib/permissions` (`LEVELS`) |
+| `LevelBadge` | `level` (0–3), `withIcon?` | Toegangsniveau als getinte pill (weergave) |
+| `RolePill` | `role` (`RoleId`), `active?`, `onClick?` | Rol-chip met gekleurde dot; klikbaar of informatief. Kleur/naam uit `ROLE_META` (`lib/permissions`) |
+| `Stepper` | `steps [{id,label,icon?}]`, `current`, `onJump?` | Voortgangsindicator voor wizards; eerdere stappen klikbaar |
 
 ### Overlays — `components/ui/`
 
@@ -124,6 +136,7 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `AssigneeDropdown` | `components/todos/AssigneeDropdown` | Teamleden toewijzen (multi-select) met avatars |
 | `TodoRow` | `components/todos/TodoRow` | Persoonlijke-todo-rij (variant B) met inline pickers |
 | `TakenDrawer` | `components/todos/TakenDrawer` | Globale "Mijn taken"-drawer (quick-add + lijst); open via `useTakenStore` / ⌘⇧T |
+| `ContentPlannenDrawer` | `components/content/ContentPlannenDrawer` | "Content plannen"-drawer: kies klant + schilder/sleep foto/video/afwisselend op een 2-maands kalender (rechtsklik = gum) → `bulkSchedulePosts` maakt drafts. Feature-drawer, geen losse DemoBlock |
 
 ### Status-configs (bron van waarheid)
 
