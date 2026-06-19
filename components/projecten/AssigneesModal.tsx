@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/SearchInput'
+import { Dialog, DialogContent, DialogClose, DialogTitle } from '@/components/ui/Dialog'
 import { setProjectAssignees } from '@/app/(app)/projecten/actions'
 import type { ProjectAssigneeProfile } from '@/types/project'
 import type { TeamMember } from '@/types/team'
@@ -43,8 +44,6 @@ export function AssigneesModal({
     )
   }, [teamMembers, search])
 
-  if (!open) return null
-
   function toggle(id: string) {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -80,28 +79,17 @@ export function AssigneesModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40"
-        onClick={() => onOpenChange(false)}
-      />
-
-      {/* Panel */}
-      <div className="relative z-10 w-full max-w-sm bg-bg-1 rounded-xl border border-border shadow-2xl flex flex-col max-h-[70vh]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent showCloseButton={false} className="flex max-h-[70vh] flex-col gap-0 overflow-hidden p-0">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-          <span className="text-[14px] font-semibold text-fg-1">Verantwoordelijken</span>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => onOpenChange(false)}
-            aria-label="Sluiten"
-            className="text-fg-3"
+          <DialogTitle className="text-[14px] font-semibold text-fg-1">Verantwoordelijken</DialogTitle>
+          <DialogClose
+            render={<Button variant="ghost" size="icon-sm" aria-label="Sluiten" className="text-fg-3" />}
           >
             <SvgIcon name="x" size={15} />
-          </Button>
+          </DialogClose>
         </div>
 
         {/* Search */}
@@ -171,7 +159,7 @@ export function AssigneesModal({
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

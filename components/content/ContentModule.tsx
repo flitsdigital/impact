@@ -19,7 +19,7 @@ import type { Post, PostStatus, PostType } from '@/types/post'
 import { STATUS_ICON, STATUS_LABEL, STATUS_ORDER } from '@/types/post'
 import type { Klant } from '@/types/klant'
 import type { TeamMember } from '@/types/team'
-import { fmtDate, parseDate, toLocalDateStr } from '@/lib/dates'
+import { fmtDate, parseDate, toLocalDateStr, getMonday, getISOWeek, MONTHS_NL } from '@/lib/dates'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -53,17 +53,8 @@ type View = 'maand' | 'week' | 'lijst' | 'kanban'
 
 const DAYS_NL_SHORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
 const DAYS_NL_LONG = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag']
-const MONTHS_NL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
-
-function getMonday(date: Date): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  const day = d.getDay()
-  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
-  return d
-}
 
 function getWeekDays(date: Date): Date[] {
   const mon = getMonday(date)
@@ -72,14 +63,6 @@ function getWeekDays(date: Date): Date[] {
     d.setDate(mon.getDate() + i)
     return d
   })
-}
-
-function getISOWeek(date: Date): number {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7))
-  const jan4 = new Date(d.getFullYear(), 0, 4)
-  return 1 + Math.round(((d.getTime() - jan4.getTime()) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7)
 }
 
 function getMonthCalendar(year: number, month: number): Date[][] {
@@ -117,10 +100,6 @@ function groupByDate(posts: Post[]): Map<string, Post[]> {
   }
   for (const list of map.values()) list.sort(byPosition)
   return map
-}
-
-function formatDateNL(date: Date, opts?: Intl.DateTimeFormatOptions): string {
-  return date.toLocaleDateString('nl-NL', opts ?? { day: 'numeric', month: 'short' })
 }
 
 // ─── Drag types ───────────────────────────────────────────────────────────────
@@ -508,7 +487,7 @@ function LijstView({ posts, onAdd, onEdit }: {
     const key = toLocalDateStr(mon)
     if (!weeks.has(key)) {
       const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
-      weeks.set(key, { label: `Week van ${formatDateNL(mon)} / ${formatDateNL(sun)}`, date: mon, posts: [] })
+      weeks.set(key, { label: `Week van ${fmtDate(mon)} / ${fmtDate(sun)}`, date: mon, posts: [] })
     }
     weeks.get(key)!.posts.push(p)
   }
@@ -757,7 +736,7 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
     }
     const mon = getMonday(currentDate)
     const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
-    return `Week ${getISOWeek(mon)}  ${formatDateNL(mon)} t/m ${formatDateNL(sun)}`
+    return `Week ${getISOWeek(mon)}  ${fmtDate(mon)} t/m ${fmtDate(sun)}`
   }
 
   return (

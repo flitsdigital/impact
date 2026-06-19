@@ -40,11 +40,6 @@ export interface LeadDocument {
   created_at: string
 }
 
-export interface LeadWithRelations extends Lead {
-  contactmomenten: LeadContactmoment[]
-  documents:       LeadDocument[]
-}
-
 // ─── Pipeline-kolommen ────────────────────────────────────────────────────────
 // Zelfde vorm als PROJECT_COLUMNS zodat StatusChip, KanbanBoard en de
 // status-dropdown er direct mee werken.

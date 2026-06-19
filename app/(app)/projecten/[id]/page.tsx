@@ -20,8 +20,8 @@ export default async function ProjectDetailPage({
   const { data: rawProject, error } = await supabase
     .from('projects')
     .select(`
-      id, klant_id, naam, beschrijving, status, kleur,
-      budget, deadline, project_number,
+      id, klant_id, naam, beschrijving, status, kleur, prioriteit,
+      budget, start_date, deadline, project_number,
       created_at, updated_at,
       klanten ( id, naam ),
       project_labels ( id, project_id, naam, kleur, created_at )
@@ -31,55 +31,29 @@ export default async function ProjectDetailPage({
 
   if (error || !rawProject) notFound()
 
-  // Try to fetch optional relations (tables may not exist yet)
-  let assignees: any[] = []
-  let favorites: any[] = []
-  let prioriteit = 'normaal'
-  let start_date: string | null = null
+  const { data: assigneeData } = await supabase
+    .from('project_assignees')
+    .select('profile_id, profiles ( id, full_name, avatar_url, email )')
+    .eq('project_id', id)
+  const assignees: any[] = assigneeData ?? []
 
-  try {
+  const { data: { user } } = await supabase.auth.getUser()
+  let favorites: { user_id: string }[] = []
+  if (user) {
     const { data } = await supabase
-      .from('project_assignees')
-      .select('profile_id, profiles ( id, full_name, avatar_url, email )')
+      .from('project_favorites')
+      .select('user_id')
       .eq('project_id', id)
-    assignees = data ?? []
-  } catch { /* table may not exist */ }
+      .eq('user_id', user.id)
+    favorites = data ?? []
+  }
 
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { data } = await supabase
-        .from('project_favorites')
-        .select('user_id')
-        .eq('project_id', id)
-        .eq('user_id', user.id)
-      favorites = data ?? []
-    }
-  } catch { /* table may not exist */ }
-
-  // Try reading prioriteit/start_date columns
-  try {
-    const { data } = await supabase
-      .from('projects')
-      .select('prioriteit, start_date')
-      .eq('id', id)
-      .single()
-    if (data) {
-      prioriteit = data.prioriteit ?? 'normaal'
-      start_date = data.start_date ?? null
-    }
-  } catch { /* columns may not exist */ }
-
-  // Try to fetch project documents
-  let documents: any[] = []
-  try {
-    const { data } = await supabase
-      .from('project_documents')
-      .select('id, project_id, type, naam, url, created_at')
-      .eq('project_id', id)
-      .order('created_at', { ascending: true })
-    documents = data ?? []
-  } catch { /* table may not exist yet */ }
+  const { data: documentData } = await supabase
+    .from('project_documents')
+    .select('id, project_id, type, naam, url, created_at')
+    .eq('project_id', id)
+    .order('created_at', { ascending: true })
+  let documents: any[] = documentData ?? []
 
   // Sign file URLs (bucket is private). Links pass through untouched.
   if (documents.length > 0) {
@@ -99,8 +73,7 @@ export default async function ProjectDetailPage({
 
   const project: ProjectWithRelations = {
     ...(rawProject as any),
-    prioriteit,
-    start_date,
+    prioriteit: rawProject.prioriteit ?? 'normaal',
     assignees,
     labels: rawProject.project_labels ?? [],
     favorites,

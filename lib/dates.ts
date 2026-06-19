@@ -22,8 +22,9 @@ export function parseDate(dateStr: string): Date {
   return new Date(dateStr.length === 10 ? dateStr + 'T12:00:00' : dateStr)
 }
 
-export function fmtDate(dateStr: string, opts?: Intl.DateTimeFormatOptions): string {
-  return parseDate(dateStr).toLocaleDateString('nl-NL', opts ?? { day: 'numeric', month: 'short' })
+export function fmtDate(date: string | Date, opts?: Intl.DateTimeFormatOptions): string {
+  const d = typeof date === 'string' ? parseDate(date) : date
+  return d.toLocaleDateString('nl-NL', opts ?? { day: 'numeric', month: 'short' })
 }
 
 export function fmtDateTime(dateStr: string): string {
@@ -52,4 +53,25 @@ export function isOverdue(dateStr: string): boolean {
 
 export function toLocalDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export const MONTHS_NL = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+  'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December']
+
+// Maandag van de week waarin `date` valt (lokale tijd, ma=start).
+export function getMonday(date: Date): Date {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  const day = d.getDay()
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  return d
+}
+
+// ISO-8601 weeknummer (1–53).
+export function getISOWeek(date: Date): number {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7))
+  const jan4 = new Date(d.getFullYear(), 0, 4)
+  return 1 + Math.round(((d.getTime() - jan4.getTime()) / 86400000 - 3 + ((jan4.getDay() + 6) % 7)) / 7)
 }

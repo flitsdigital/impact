@@ -61,6 +61,33 @@ const postSchema = z.object({
   media_urls:   z.array(z.string()).default([]),
 })
 
+// Bouwt de post-velden uit het formulier (gedeeld door create + update).
+function buildPostFields(formData: FormData, media_urls: string[]) {
+  const rawKlantId = formData.get('klant_id') as string | null
+  return {
+    klant_id:     (rawKlantId && rawKlantId !== '__none__') ? rawKlantId : null,
+    status:       formData.get('status') || 'te_doen',
+    type:         formData.get('type') || 'foto',
+    caption:      formData.get('caption') || null,
+    scheduled_at: formData.get('scheduled_at') || null,
+    media_urls,
+  }
+}
+
+// Voegt de geselecteerde assignees toe aan een post. Geeft een foutmelding terug, of null.
+async function insertPostAssignees(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  postId: string,
+  formData: FormData,
+): Promise<string | null> {
+  const ids = parseAssigneeIds(formData.get('assignee_ids'))
+  if (ids.length === 0) return null
+  const { error } = await supabase.from('post_assignees').insert(
+    ids.map((uid) => ({ post_id: postId, user_id: uid })),
+  )
+  return error?.message ?? null
+}
+
 // ─── Create post ─────────────────────────────────────────────────────────────
 
 export async function createPost(
@@ -74,17 +101,7 @@ export async function createPost(
   try { media_urls = await resolveMediaUrls(supabase, formData) }
   catch (e) { return { error: (e as Error).message } }
 
-  const rawKlantId = formData.get('klant_id') as string | null
-  const raw = {
-    klant_id:     (rawKlantId && rawKlantId !== '__none__') ? rawKlantId : null,
-    status:       formData.get('status') || 'te_doen',
-    type:         formData.get('type') || 'foto',
-    caption:      formData.get('caption') || null,
-    scheduled_at: formData.get('scheduled_at') || null,
-    media_urls,
-  }
-
-  const parsed = postSchema.safeParse(raw)
+  const parsed = postSchema.safeParse(buildPostFields(formData, media_urls))
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validatiefout' }
 
   const { data, error } = await supabase
@@ -95,13 +112,8 @@ export async function createPost(
   if (error) return { error: error.message }
 
   // Assignees
-  const assigneeIds = parseAssigneeIds(formData.get('assignee_ids'))
-  if (assigneeIds.length > 0) {
-    const { error: insertAssigneesError } = await supabase.from('post_assignees').insert(
-      assigneeIds.map((uid) => ({ post_id: data.id, user_id: uid }))
-    )
-    if (insertAssigneesError) return { error: insertAssigneesError.message }
-  }
+  const assigneeErr = await insertPostAssignees(supabase, data.id, formData)
+  if (assigneeErr) return { error: assigneeErr }
 
   // Audit log
   await supabase.from('post_logs').insert({
@@ -171,17 +183,7 @@ export async function updatePost(
   try { media_urls = await resolveMediaUrls(supabase, formData) }
   catch (e) { return { error: (e as Error).message } }
 
-  const rawKlantId2 = formData.get('klant_id') as string | null
-  const raw = {
-    klant_id:     (rawKlantId2 && rawKlantId2 !== '__none__') ? rawKlantId2 : null,
-    status:       formData.get('status') || 'te_doen',
-    type:         formData.get('type') || 'foto',
-    caption:      formData.get('caption') || null,
-    scheduled_at: formData.get('scheduled_at') || null,
-    media_urls,
-  }
-
-  const parsed = postSchema.safeParse(raw)
+  const parsed = postSchema.safeParse(buildPostFields(formData, media_urls))
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validatiefout' }
 
   const { error } = await supabase.from('posts').update(parsed.data).eq('id', id)
@@ -190,13 +192,8 @@ export async function updatePost(
   // Replace assignees atomically
   const { error: deleteAssigneesError } = await supabase.from('post_assignees').delete().eq('post_id', id)
   if (deleteAssigneesError) return { error: deleteAssigneesError.message }
-  const assigneeIds = parseAssigneeIds(formData.get('assignee_ids'))
-  if (assigneeIds.length > 0) {
-    const { error: insertAssigneesError } = await supabase.from('post_assignees').insert(
-      assigneeIds.map((uid) => ({ post_id: id, user_id: uid }))
-    )
-    if (insertAssigneesError) return { error: insertAssigneesError.message }
-  }
+  const assigneeErr = await insertPostAssignees(supabase, id, formData)
+  if (assigneeErr) return { error: assigneeErr }
 
   await supabase.from('post_logs').insert({ post_id: id, action: 'updated' })
 

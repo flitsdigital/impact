@@ -99,19 +99,9 @@ export interface ProjectWithRelations extends Project {
   documents:   ProjectDocument[]
 }
 
-export interface TaskAssigneeProfile {
-  profile_id: string
-  profiles: {
-    id:         string
-    full_name:  string | null
-    avatar_url: string | null
-    email:      string | null
-  }
-}
-
 export interface TaskWithRelations extends Task {
   project?:        Pick<Project, 'id' | 'naam' | 'kleur'>
-  assignees:       TaskAssigneeProfile[]
+  assignees:       ProjectAssigneeProfile[]
   labels:          Array<{ label_id: string; project_labels: ProjectLabel }>
   subtasks:        Task[]          // direct children (parent_id = this.id)
   subtask_done:    number          // computed: subtasks with status='klaar'

@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient, requireAuth } from '@/lib/supabase/server'
+import { createClient, requireAuth, uploadToBucket } from '@/lib/supabase/server'
 import { z } from 'zod/v4'
 import type { Lead, LeadContactmoment } from '@/types/lead'
 
@@ -93,10 +93,6 @@ export async function updateLead(
   return {}
 }
 
-export async function moveLead(leadId: string, newStatus: string): Promise<{ error?: string }> {
-  return updateLead(leadId, { status: newStatus })
-}
-
 // Vervangt de volledige set toegewezen teamleden. Spiegelt todos.setAssignees:
 // eerst upsert, daarna verwijderen, zodat een mislukte insert nooit alles wist.
 export async function setLeadAssignees(leadId: string, userIds: string[]): Promise<{ error?: string }> {
@@ -135,6 +131,44 @@ export async function deleteLead(leadId: string): Promise<{ error?: string }> {
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
 
   const { error } = await supabase.from('leads').delete().eq('id', leadId)
+  if (error) return { error: error.message }
+
+  revalidateLeads()
+  return {}
+}
+
+const bulkLeadPatchSchema = z.object({
+  status: z.enum(['nieuw', 'contact', 'offerte', 'gewonnen', 'verloren']).optional(),
+  bron:   z.enum(['website', 'referral', 'outbound', 'overig']).optional(),
+})
+
+export async function bulkUpdateLeads(
+  ids: string[],
+  patch: { status?: string; bron?: string },
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  if (ids.length === 0) return { error: 'Geen leads geselecteerd.' }
+
+  const parsed = bulkLeadPatchSchema.safeParse(patch)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Validatiefout' }
+  if (Object.keys(parsed.data).length === 0) return { error: 'Niets om bij te werken.' }
+
+  const { error } = await supabase.from('leads').update(parsed.data).in('id', ids)
+  if (error) return { error: error.message }
+
+  revalidateLeads()
+  return {}
+}
+
+export async function bulkDeleteLeads(ids: string[]): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
+
+  if (ids.length === 0) return { error: 'Geen leads geselecteerd.' }
+
+  const { error } = await supabase.from('leads').delete().in('id', ids)
   if (error) return { error: error.message }
 
   revalidateLeads()
@@ -192,25 +226,7 @@ export async function uploadLeadFile(
 ): Promise<{ error?: string; url?: string }> {
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
-
-  const file = formData.get('file')
-  if (!(file instanceof File)) return { error: 'Geen bestand ontvangen.' }
-
-  const MAX_UPLOAD_BYTES = 20 * 1024 * 1024 // 20 MB — matcht de UI-limiet
-  if (file.size > MAX_UPLOAD_BYTES) return { error: 'Bestand is groter dan 20 MB.' }
-
-  // Letters/cijfers/punt/streepje/underscore behouden; de rest wordt '-'
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+/, '').slice(0, 100)
-  const path = `${leadId}/${Date.now()}-${safeName || 'bestand'}`
-  const bytes = Buffer.from(await file.arrayBuffer())
-
-  const { error: uploadError } = await supabase.storage
-    .from('lead-docs')
-    .upload(path, bytes, { contentType: file.type, upsert: false })
-
-  if (uploadError) return { error: uploadError.message }
-
-  return { url: path }
+  return uploadToBucket(supabase, 'lead-docs', leadId, formData)
 }
 
 // ─── Contactmomenten ──────────────────────────────────────────────────────────

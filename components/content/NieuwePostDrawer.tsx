@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Avatar }   from '@/components/ui/Avatar'
 import { SvgIcon }  from '@/components/ui/SvgIcon'
 import { cn }          from '@/lib/utils'
+import { toLocalDateStr } from '@/lib/dates'
 import { createPost, updatePost }  from '@/app/(app)/content/actions'
 import type { Post, PostStatus, PostType } from '@/types/post'
 import { STATUS_ICON, STATUS_LABEL, STATUS_ORDER } from '@/types/post'
@@ -185,7 +186,7 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
   const [status,           setStatus]       = useState<PostStatus>('te_doen')
   const [klantId,          setKlantId]      = useState('__none__')
   const [type,             setType]         = useState<PostType>('foto')
-  const [date,             setDate]         = useState(defaultDate ?? new Date().toISOString().slice(0, 10))
+  const [date,             setDate]         = useState(defaultDate ?? toLocalDateStr(new Date()))
   const [caption,          setCaption]      = useState('')
   const [assigneeIds,      setAssigneeIds]  = useState<string[]>([])
   const [media,            setMedia]        = useState<MediaItem[]>([])
@@ -202,7 +203,7 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
       setStatus(post.status)
       setKlantId(post.klant_id ?? '__none__')
       setType(post.type)
-      setDate(post.scheduled_at ?? new Date().toISOString().slice(0, 10))
+      setDate(post.scheduled_at ?? toLocalDateStr(new Date()))
       setCaption(post.caption ?? '')
       setAssigneeIds((post.assignees ?? []).map((a) => a.id))
       setMedia((post.media_urls ?? []).map((url) => ({ kind: 'url', url })))
@@ -219,7 +220,7 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
   useEffect(() => {
     if (!open && !post) {
       setStatus('te_doen'); setKlantId('__none__'); setType('foto')
-      setDate(defaultDate ?? new Date().toISOString().slice(0, 10))
+      setDate(defaultDate ?? toLocalDateStr(new Date()))
       setCaption(''); setAssigneeIds([]); setMedia([]); setError(null)
     }
   }, [open, post, defaultDate])

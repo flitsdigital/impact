@@ -15,7 +15,7 @@ import { GanttView } from './GanttView'
 import { NieuwProjectDrawer } from './NieuwProjectDrawer'
 import type { Project, Milestone, ProjectAssigneeProfile } from '@/types/project'
 import { PROJECT_COLUMNS } from '@/types/project'
-import { moveProject, updateProject } from '@/app/(app)/projecten/actions'
+import { updateProject } from '@/app/(app)/projecten/actions'
 
 type View = 'kanban' | 'gantt'
 
@@ -46,7 +46,7 @@ export function ProjectenModule({ projects, tasks: taskSummary, milestones }: Pr
     setLocalProjects(prev => prev.map(p =>
       p.id === projectId ? { ...p, status: toStatus as Project['status'] } : p,
     ))
-    startTransition(() => { moveProject(projectId, toStatus) })
+    startTransition(() => { updateProject(projectId, { status: toStatus }) })
   }
 
   function handleDatesChange(projectId: string, start: string | null, deadline: string | null) {

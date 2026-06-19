@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient, requireAuth } from '@/lib/supabase/server'
+import { createClient, requireAuth, uploadToBucket } from '@/lib/supabase/server'
 import type { Task, TaskStatus, TaskPriority } from '@/types/project'
 
 // ─── Projects ─────────────────────────────────────────────────────────────────
@@ -59,13 +59,6 @@ export async function updateProject(
 
   revalidatePath('/projecten')
   return {}
-}
-
-export async function moveProject(
-  projectId: string,
-  newStatus: string,
-): Promise<{ error?: string }> {
-  return updateProject(projectId, { status: newStatus })
 }
 
 export async function toggleFavorite(projectId: string): Promise<{ error?: string }> {
@@ -254,15 +247,6 @@ export async function addComment(
   return { id: data.id }
 }
 
-export async function deleteComment(commentId: string): Promise<{ error?: string }> {
-  const supabase = await createClient()
-  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
-  const { error } = await supabase.from('task_comments').delete().eq('id', commentId)
-  if (error) return { error: error.message }
-  revalidatePath('/projecten')
-  return {}
-}
-
 // ─── Project documents ────────────────────────────────────────────────────────
 
 export async function addProjectDocument(
@@ -319,45 +303,5 @@ export async function uploadProjectFile(
 ): Promise<{ error?: string; url?: string }> {
   const supabase = await createClient()
   try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
-
-  const file = formData.get('file')
-  if (!(file instanceof File)) return { error: 'Geen bestand ontvangen.' }
-
-  const MAX_UPLOAD_BYTES = 20 * 1024 * 1024 // 20 MB — matches the UI limit
-  if (file.size > MAX_UPLOAD_BYTES) return { error: 'Bestand is groter dan 20 MB.' }
-
-  // Keep letters/digits/dot/dash/underscore; collapse the rest to '-'
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^[-.]+/, '').slice(0, 100)
-  const path = `${projectId}/${Date.now()}-${safeName || 'bestand'}`
-  const bytes = Buffer.from(await file.arrayBuffer())
-
-  const { error: uploadError } = await supabase.storage
-    .from('project-docs')
-    .upload(path, bytes, { contentType: file.type, upsert: false })
-
-  if (uploadError) return { error: uploadError.message }
-
-  return { url: path }
-}
-
-// ─── Labels ───────────────────────────────────────────────────────────────────
-
-export async function createLabel(
-  projectId: string,
-  naam: string,
-  kleur: string,
-): Promise<{ error?: string; id?: string }> {
-  const supabase = await createClient()
-  try { await requireAuth(supabase) } catch { return { error: 'Niet ingelogd.' } }
-
-  const { data, error } = await supabase
-    .from('project_labels')
-    .insert({ project_id: projectId, naam, kleur })
-    .select('id')
-    .single()
-
-  if (error) return { error: error.message }
-
-  revalidatePath('/projecten')
-  return { id: data.id }
+  return uploadToBucket(supabase, 'project-docs', projectId, formData)
 }
