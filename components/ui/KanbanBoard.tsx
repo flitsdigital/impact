@@ -103,8 +103,11 @@ export function KanbanBoard<TItem>({
   }, [draggingId, onMove])
 
   // ── Render ───────────────────────────────────────────────────────────────────
+  // Telefoon: kolommen zijn ~82vw breed en horizontaal te swipen (scroll-snap),
+  // want native HTML5-drag werkt niet op touch — kaart verplaatsen gaat via
+  // tik → detail → status. Desktop: kolommen vullen samen de breedte.
   return (
-    <div className="flex h-full overflow-hidden p-4 gap-4">
+    <div className="flex h-full p-3 gap-3 md:p-4 md:gap-4 overflow-x-auto snap-x snap-mandatory md:overflow-hidden md:snap-none">
       {columns.map((col) => {
         const colItems  = items.filter((item) => getColKey(item) === col.key)
         const isOver    = dragOverKey === col.key
@@ -116,7 +119,7 @@ export function KanbanBoard<TItem>({
             <div
               key={col.key}
               className={cn(
-                'shrink-0 w-[34px] bg-bg-0 rounded-md flex flex-col items-center',
+                'shrink-0 w-[34px] snap-start bg-bg-0 rounded-md flex flex-col items-center',
                 'cursor-pointer transition-colors hover:bg-bg-3/20',
                 isOver && 'bg-bg-3/30',
               )}
@@ -153,7 +156,8 @@ export function KanbanBoard<TItem>({
           <div
             key={col.key}
             className={cn(
-              'flex-1 bg-bg-0 rounded-md flex flex-col min-w-[180px] transition-colors overflow-hidden',
+              'bg-bg-0 rounded-md flex flex-col transition-colors overflow-hidden',
+              'w-[82vw] max-w-[20rem] shrink-0 snap-start md:w-auto md:max-w-none md:flex-1 md:min-w-[180px]',
               isOver && 'ring-1 ring-border-strong',
             )}
             onDragOver={(e) => handleDragOver(e, col.key)}

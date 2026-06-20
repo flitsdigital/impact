@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/DropdownMenu'
 import { StatusChip } from '@/components/ui/StatusChip'
 import { SvgIcon } from '@/components/ui/SvgIcon'
+import { MobileListCard } from '@/components/ui/MobileListCard'
 import { cn } from '@/lib/utils'
 import type { Lead } from '@/types/lead'
 import { LEAD_COLUMNS, BRON_LABEL } from '@/types/lead'
@@ -56,7 +57,74 @@ export function LeadsLijst({
       })
 
   return (
-    <div className="flex-1 overflow-auto min-h-0">
+    <>
+      {/* ── Kaarten (telefoon) ───────────────────────────────────────────── */}
+      <div className="md:hidden flex-1 overflow-y-auto min-h-0 flex flex-col gap-2 p-3">
+        {sorted.length === 0 && (
+          <p className="py-16 text-center text-sm text-muted-foreground">Geen leads gevonden.</p>
+        )}
+        {sorted.map((lead) => {
+          const status = LEAD_COLUMNS.find((c) => c.status === lead.status)
+          const isSelected = selectedIds?.has(lead.id) ?? false
+          return (
+            <MobileListCard
+              key={lead.id}
+              onClick={() => onLeadClick(lead)}
+              selected={isSelected}
+              leading={
+                selectable ? (
+                  <Checkbox checked={isSelected} onCheckedChange={() => onToggleSelect?.(lead.id)} />
+                ) : undefined
+              }
+              trailing={
+                selectable ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label="Acties"
+                    >
+                      <SvgIcon name="ellipsis" size={16} />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="text-destructive" onSelect={() => onDeleteOne?.(lead.id)}>
+                        <SvgIcon name="trash" size={13} />
+                        Verwijderen
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : undefined
+              }
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="truncate text-[14px] font-medium text-foreground">{lead.bedrijfsnaam}</span>
+                {lead.waarde != null && (
+                  <span className="shrink-0 text-[13px] font-medium tabular-nums text-foreground">
+                    {formatEur(lead.waarde)}
+                  </span>
+                )}
+              </span>
+              <span className="flex flex-wrap items-center gap-1.5">
+                {status && (
+                  <StatusChip
+                    iconName={status.iconName}
+                    label={status.label}
+                    textClass={status.textClass}
+                    className="text-xs"
+                  />
+                )}
+                <span className="text-[12px] text-muted-foreground">· {BRON_LABEL[lead.bron]}</span>
+              </span>
+              <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                {lead.contactpersoon && <span className="truncate">{lead.contactpersoon}</span>}
+                <span className="shrink-0 tabular-nums">· {fmtDate(lead.created_at)}</span>
+              </span>
+            </MobileListCard>
+          )
+        })}
+      </div>
+
+      {/* ── Table (tablet/desktop) ──────────────────────────────────────── */}
+      <div className="hidden md:block flex-1 overflow-auto min-h-0">
       <table
         className="w-full border-separate border-spacing-0 text-sm"
         style={{ minWidth: 900 }}
@@ -201,6 +269,7 @@ export function LeadsLijst({
           })}
         </TableBody>
       </table>
-    </div>
+      </div>
+    </>
   )
 }

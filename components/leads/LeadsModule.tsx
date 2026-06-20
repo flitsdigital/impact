@@ -26,6 +26,7 @@ import {
   DialogFooter,
 } from '@/components/ui/Dialog'
 import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { LeadKaart } from './LeadKaart'
 import { LeadsLijst } from './LeadsLijst'
@@ -49,7 +50,10 @@ interface LeadsModuleProps {
 
 export function LeadsModule({ leads: initialLeads, team }: LeadsModuleProps) {
   const router = useRouter()
-  const [view, setView]               = useState<View>('kanban')
+  // Telefoon landt op de lijst (= kaarten); kanban blijft de desktop-default.
+  const isMobile = useIsMobile()
+  const [userView, setUserView]       = useState<View | null>(null)
+  const view = userView ?? (isMobile ? 'lijst' : 'kanban')
   const [searchQuery, setSearchQuery] = useState('')
   const [drawerOpen, setDrawerOpen]   = useState(false)
   const [leadKey, setLeadKey]         = useState(0)
@@ -161,7 +165,7 @@ export function LeadsModule({ leads: initialLeads, team }: LeadsModuleProps) {
         }
         toolbar={
           <PageToolbar>
-            <SegmentedControl options={VIEWS} value={view} onChange={setView} />
+            <SegmentedControl options={VIEWS} value={view} onChange={setUserView} />
             <span className="ml-auto text-[12px] text-muted-foreground">
               {filteredLeads.length} leads
             </span>

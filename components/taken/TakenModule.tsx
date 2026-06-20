@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/Select'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SearchInput } from '@/components/ui/SearchInput'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { KanbanBoard } from '@/components/projecten/KanbanBoard'
 import { TakenLijst } from './TakenLijst'
@@ -34,7 +35,10 @@ const VIEW_TABS: { value: View; label: string; icon: string }[] = [
 ]
 
 export function TakenModule({ projects, tasks: initialTasks }: TakenModuleProps) {
-  const [view, setView]                         = useState<View>('kanban')
+  // Telefoon landt op de lijst (= kaarten); kanban blijft de desktop-default.
+  const isMobile = useIsMobile()
+  const [userView, setUserView]                 = useState<View | null>(null)
+  const view = userView ?? (isMobile ? 'lijst' : 'kanban')
   const [searchQuery, setSearchQuery]           = useState('')
   const [filterProject, setFilterProject]       = useState<string>('all')
   const [filterPriority, setFilterPriority]     = useState<string>('all')
@@ -129,7 +133,7 @@ export function TakenModule({ projects, tasks: initialTasks }: TakenModuleProps)
         toolbar={
           <>
             <PageToolbar>
-              <SegmentedControl options={VIEW_TABS} value={view} onChange={setView} />
+              <SegmentedControl options={VIEW_TABS} value={view} onChange={setUserView} />
 
               {/* Filters button */}
               <Button

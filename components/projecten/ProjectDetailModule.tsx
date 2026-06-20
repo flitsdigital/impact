@@ -299,7 +299,7 @@ export function ProjectDetailModule({
         {tab === 'overzicht' && (
           <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
             {/* Project overview header */}
-            <div className="w-full max-w-8/12 mx-auto px-8 pt-6 pb-4 shrink-0 flex flex-col gap-3">
+            <div className="w-full max-w-none md:max-w-8/12 mx-auto px-4 md:px-8 pt-6 pb-4 shrink-0 flex flex-col gap-3">
               {/* Project number */}
               <span className="text-[12px] font-mono text-fg-3">
                 FLT-{project.project_number}

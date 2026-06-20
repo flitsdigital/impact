@@ -10,7 +10,9 @@ import { KanbanBoard } from '@/components/ui/KanbanBoard'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { StatusChip } from '@/components/ui/StatusChip'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { MobileListCard } from '@/components/ui/MobileListCard'
 import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { PageHeader, PageToolbar } from '@/components/layout/PageHeader'
 import { NieuwePostDrawer } from './NieuwePostDrawer'
 import { ContentPlannenDrawer } from './ContentPlannenDrawer'
@@ -49,7 +51,13 @@ const VIEWS = [
   { value: 'kanban' as const, label: 'Kanban', icon: 'chart-kanban' },
 ]
 
-type View = 'maand' | 'week' | 'lijst' | 'kanban'
+// Telefoon: kalender-grids werken niet → agenda (iOS-stijl) + swipebare kanban.
+const MOBILE_VIEWS = [
+  { value: 'agenda' as const, label: 'Agenda', icon: 'calendar' },
+  { value: 'kanban' as const, label: 'Kanban', icon: 'chart-kanban' },
+]
+
+type View = 'maand' | 'week' | 'lijst' | 'kanban' | 'agenda'
 
 const DAYS_NL_SHORT = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo']
 const DAYS_NL_LONG = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag']
@@ -502,7 +510,7 @@ function LijstView({ posts, onAdd, onEdit }: {
     <div className="flex-1 overflow-auto">
       {sortedWeeks.map(([weekKey, { label, posts: weekPosts }]) => (
         <div key={weekKey} className="border-b border-border last:border-b-0">
-          <div className="px-8 py-3 text-xs font-medium text-muted-foreground bg-muted/20">
+          <div className="px-4 md:px-8 py-3 text-xs font-medium text-muted-foreground bg-muted/20">
             {label}
           </div>
 
@@ -519,7 +527,7 @@ function LijstView({ posts, onAdd, onEdit }: {
                   onClick={() => {
                     setCollapsed((prev) => { const n = new Set(prev); n.has(sectionKey) ? n.delete(sectionKey) : n.add(sectionKey); return n })
                   }}
-                  className="w-full flex items-center gap-2 px-8 py-2 hover:bg-muted/30 transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-4 md:px-8 py-2 hover:bg-muted/30 transition-colors text-left"
                 >
                   <StatusChip
                     iconName={cfg.iconName}
@@ -540,7 +548,7 @@ function LijstView({ posts, onAdd, onEdit }: {
                     key={p.id}
                     onClick={() => onEdit(p)}
                     className={cn(
-                      'flex items-center gap-3 px-8 py-2.5 border-t border-border/50 hover:bg-muted/20 cursor-pointer',
+                      'flex items-center gap-3 px-4 md:px-8 py-2.5 border-t border-border/50 hover:bg-muted/20 cursor-pointer',
                       selected.has(p.id) && 'bg-muted/30',
                     )}
                   >
@@ -571,6 +579,130 @@ function LijstView({ posts, onAdd, onEdit }: {
   )
 }
 
+// ─── MobileCalendar ─────────────────────────────────────────────────────────
+// Telefoon-kalender in de stijl van iOS/Google Calendar: compacte maand-grid met
+// event-dots boven, dag-agenda eronder. Tik op een dag → agenda eronder verspringt.
+
+function mobileDayHeader(key: string): string {
+  const d = parseDate(key)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const target = new Date(d); target.setHours(0, 0, 0, 0)
+  const diff = Math.round((target.getTime() - today.getTime()) / 86_400_000)
+  const base = `${DAYS_NL_LONG[(d.getDay() + 6) % 7]} ${d.getDate()} ${MONTHS_NL[d.getMonth()].toLowerCase()}`
+  if (diff === 0) return `Vandaag · ${base}`
+  if (diff === 1) return `Morgen · ${base}`
+  if (diff === -1) return `Gisteren · ${base}`
+  return base
+}
+
+function MobileCalendar({ posts, currentDate, selectedDay, onSelectDay, onAdd, onEdit }: {
+  posts: Post[]
+  currentDate: Date
+  selectedDay: string
+  onSelectDay: (key: string) => void
+  onAdd: (date?: string) => void
+  onEdit: (post: Post) => void
+}) {
+  const year = currentDate.getFullYear()
+  const month = currentDate.getMonth()
+  const weeks = getMonthCalendar(year, month)
+  const byDate = groupByDate(posts)
+  const today = toLocalDateStr(new Date())
+  const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`
+
+  // Selectie binnen de getoonde maand houden; anders terugvallen op vandaag of de 1e.
+  const sel = selectedDay.startsWith(monthStr)
+    ? selectedDay
+    : today.startsWith(monthStr) ? today : `${monthStr}-01`
+  const dayPosts = byDate.get(sel) ?? []
+
+  return (
+    <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+      {/* ── Maand-grid ── */}
+      <div className="shrink-0 border-b border-border px-2 pb-2 pt-1">
+        <div className="grid grid-cols-7">
+          {DAYS_NL_SHORT.map((d) => (
+            <div key={d} className="py-1 text-center text-[10px] font-medium text-muted-foreground">{d}</div>
+          ))}
+        </div>
+        {weeks.map((week, wi) => (
+          <div key={wi} className="grid grid-cols-7">
+            {week.map((day) => {
+              const key = toLocalDateStr(day)
+              const inMonth = day.getMonth() === month
+              const isToday = key === today
+              const isSel = key === sel
+              const count = byDate.get(key)?.length ?? 0
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onSelectDay(key)}
+                  className={cn(
+                    'relative flex min-h-[44px] flex-col items-center justify-center transition-opacity active:opacity-60',
+                    !inMonth && 'opacity-30',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex size-8 items-center justify-center rounded-full text-[13px] tabular-nums transition-colors',
+                      isSel && 'bg-primary font-medium text-primary-foreground',
+                      !isSel && isToday && 'font-semibold text-primary',
+                      !isSel && !isToday && 'text-foreground',
+                    )}
+                  >
+                    {day.getDate()}
+                  </span>
+                  {count > 0 && (
+                    <span className={cn('absolute bottom-1.5 size-1 rounded-full', isSel ? 'bg-primary-foreground' : 'bg-primary')} />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Dag-agenda ── */}
+      <div className="flex flex-1 flex-col overflow-y-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between bg-bg-1 px-4 py-2.5">
+          <span className="text-[13px] font-medium text-foreground">{mobileDayHeader(sel)}</span>
+          <button
+            type="button"
+            onClick={() => onAdd(sel)}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-[12px] text-muted-foreground transition-colors hover:bg-bg-3 hover:text-foreground"
+          >
+            <SvgIcon name="plus" size={13} />
+            Post
+          </button>
+        </div>
+
+        {dayPosts.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">Geen posts op deze dag.</p>
+        ) : (
+          <div className="flex flex-col gap-2 px-3 pb-4">
+            {dayPosts.map((p) => (
+              <MobileListCard key={p.id} onClick={() => onEdit(p)}>
+                <span className="flex items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <StatusIcon status={p.status} size={16} />
+                    <span className="truncate text-[14px] font-medium text-foreground">{p.klant_naam ?? '—'}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1 text-[12px] text-muted-foreground">
+                    <TypeIcon type={p.type} size={12} />
+                    {TYPE_CONFIG[p.type].label}
+                  </span>
+                </span>
+                {p.caption && <span className="truncate text-[12px] text-muted-foreground">{p.caption}</span>}
+              </MobileListCard>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── ContentModule ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -580,8 +712,13 @@ interface Props {
 }
 
 export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props) {
-  const [view, setView] = useState<View>('maand')
+  // Telefoon landt op de agenda (iOS-stijl maand + dag-lijst); kalender-grids zijn desktop-werk.
+  const isMobile = useIsMobile()
+  const [userView, setUserView] = useState<View | null>(null)
+  const view = userView ?? (isMobile ? 'agenda' : 'maand')
+  const setView = setUserView
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
+  const [selectedDay, setSelectedDay] = useState<string>(() => toLocalDateStr(new Date()))
   const [modalOpen, setModalOpen] = useState(false)
   const [plannenOpen, setPlannenOpen] = useState(false)
   const [defaultDate, setDefaultDate] = useState<string | undefined>()
@@ -724,14 +861,14 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
   function navigate(dir: -1 | 1) {
     setCurrentDate((d) => {
       const next = new Date(d)
-      if (view === 'maand') next.setMonth(next.getMonth() + dir)
+      if (view === 'maand' || view === 'agenda') next.setMonth(next.getMonth() + dir)
       else next.setDate(next.getDate() + dir * 7)
       return next
     })
   }
 
   function getPeriodLabel() {
-    if (view === 'maand' || view === 'lijst') {
+    if (view === 'maand' || view === 'lijst' || view === 'agenda') {
       return `${MONTHS_NL[currentDate.getMonth()]} ${currentDate.getFullYear()}`
     }
     const mon = getMonday(currentDate)
@@ -759,7 +896,7 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
         toolbar={
           <>
             <PageToolbar>
-              <SegmentedControl options={VIEWS} value={view} onChange={setView} />
+              <SegmentedControl options={isMobile ? MOBILE_VIEWS : VIEWS} value={view} onChange={setView} />
 
               <div className="ml-auto">
                 <Button variant="ghost" size="xs" className="gap-1.5">
@@ -769,7 +906,7 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
               </div>
             </PageToolbar>
 
-            {(view === 'maand' || view === 'week' || view === 'kanban') && (
+            {(view === 'maand' || view === 'week' || view === 'kanban' || view === 'agenda') && (
               <div className="border-t border-border shrink-0 flex items-center justify-center px-3 py-1">
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon-xs" onClick={() => navigate(-1)}>
@@ -790,6 +927,7 @@ export function ContentModule({ posts: initialPosts, klanten, teamleden }: Props
 
       {/* ── View content ────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-h-0">
+        {view === 'agenda' && <MobileCalendar posts={localPosts} currentDate={currentDate} selectedDay={selectedDay} onSelectDay={setSelectedDay} onAdd={openAdd} onEdit={openEdit} />}
         {view === 'maand' && <MaandView posts={localPosts} currentDate={currentDate} onAdd={openAdd} drag={drag} onEdit={openEdit} onOpenWeek={(key) => { setCurrentDate(parseDate(key)); setView('week') }} />}
         {view === 'week' && <WeekView posts={localPosts} currentDate={currentDate} onAdd={openAdd} drag={drag} onEdit={openEdit} />}
         {view === 'kanban' && <KanbanView posts={localPosts} currentDate={currentDate} onAdd={openAdd} onEdit={openEdit} onMove={handleKanbanMove} />}

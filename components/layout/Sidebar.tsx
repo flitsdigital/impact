@@ -7,10 +7,17 @@ import { SvgIcon } from "@/components/ui/SvgIcon"
 import { usePermissions } from "@/components/permissions/PermissionsProvider"
 import { NAV_FEATURE } from "@/lib/permissions"
 
-const NAV = {
+export type NavItem = {
+  href: string
+  label: string
+  svgName: string
+  count?: number
+  kbds?: string[]
+}
+
+export const NAV: Record<"primary" | "klanten" | "projecten" | "footer", NavItem[]> = {
   primary: [
     { href: "/dashboard", label: "Dashboard", svgName: "layout-grid" },
-    { href: "/inbox", label: "Inbox", svgName: "inbox", count: 7, kbds: ["⌘", "⌥", "G"] },
   ],
   klanten: [
     { href: "/klanten",  label: "Klanten",             svgName: "users" },
@@ -23,11 +30,26 @@ const NAV = {
     { href: "/taken", label: "Taken", svgName: "check-square" },
   ],
   footer: [
-    { href: "/todos", label: "Taken", svgName: "list-check", count: 7, kbds: ["⌘", "T"] },
     { href: "/gebruikers", label: "Gebruikers", svgName: "smile" },
     { href: "/logboek", label: "Logboek", svgName: "list" },
     { href: "/instellingen", label: "Instellingen", svgName: "settings" },
   ],
+}
+
+/** Nav-groepen gefilterd op rechten — gedeeld door Sidebar (desktop) en MobileNav ("Meer"-sheet). */
+export function useVisibleNav() {
+  const { perms } = usePermissions()
+  const visible = (items: NavItem[]) =>
+    items.filter((item) => {
+      const feature = NAV_FEATURE[item.href]
+      return !feature || (perms[feature] ?? 0) > 0
+    })
+  return {
+    primary: visible(NAV.primary),
+    klanten: visible(NAV.klanten),
+    projecten: visible(NAV.projecten),
+    footer: visible(NAV.footer),
+  }
 }
 
 function NavRow({
@@ -68,7 +90,7 @@ function NavRow({
   )
 }
 
-function NavGroup({ label, items }: { label: string; items: { href: string; label: string; svgName: string; count?: number; kbds?: string[] }[] }) {
+function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
   const storageKey = `sidebar-group-${label.toLowerCase()}`
   const [open, setOpen] = useState(true)
 
@@ -114,25 +136,16 @@ function NavGroup({ label, items }: { label: string; items: { href: string; labe
 }
 
 export function Sidebar() {
-  const { perms } = usePermissions()
-
-  // Verberg items met level 0 (geen toegang). Items zonder feature-mapping
-  // (Inbox, Logboek) blijven altijd zichtbaar.
-  const visible = <T extends { href: string }>(items: T[]) =>
-    items.filter((item) => {
-      const feature = NAV_FEATURE[item.href]
-      return !feature || (perms[feature] ?? 0) > 0
-    })
-
-  const klanten = visible(NAV.klanten)
-  const projecten = visible(NAV.projecten)
+  // Items met level 0 (geen toegang) zijn al weggefilterd; Inbox/Logboek
+  // hebben geen feature-mapping en blijven altijd zichtbaar.
+  const { primary, klanten, projecten, footer } = useVisibleNav()
 
   return (
     <aside className="flex flex-col w-[var(--sidebar-w)] min-w-[var(--sidebar-w)] border-r border-border-subtle bg-bg-0 p-3 h-full overflow-hidden">
       {/* Top section — scrolls if viewport is too short */}
       <div className="flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         <div className="flex flex-col gap-0.5">
-          {visible(NAV.primary).map((item) => (
+          {primary.map((item) => (
             <NavRow key={item.href} {...item} />
           ))}
         </div>
@@ -143,7 +156,7 @@ export function Sidebar() {
 
       {/* Footer — always anchored at the bottom */}
       <div className="flex flex-col gap-0.5 pt-4 border-t border-border-subtle shrink-0">
-        {visible(NAV.footer).map((item) => (
+        {footer.map((item) => (
           <NavRow key={item.href} {...item} />
         ))}
       </div>

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { SvgIcon } from '@/components/ui/SvgIcon'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -234,7 +235,7 @@ function ContactmomentenSidebar({
   }
 
   return (
-    <aside className="flex flex-col border-l border-border shrink-0 w-[340px] min-h-0">
+    <aside className="flex flex-col border-t md:border-t-0 md:border-l border-border shrink-0 w-full md:w-[340px] min-h-0">
       {/* Sidebar header */}
       <div className="flex items-center justify-between pl-4 pr-2 py-2.5 border-b border-border-subtle shrink-0">
         <div className="flex items-center gap-2">
@@ -248,7 +249,7 @@ function ContactmomentenSidebar({
           size="icon-sm"
           onClick={onToggle}
           aria-label="Contactmomenten inklappen"
-          className="text-fg-3"
+          className="text-fg-3 hidden md:inline-flex"
         >
           <SvgIcon name="chevrons-right" size={14} />
         </Button>
@@ -259,8 +260,8 @@ function ContactmomentenSidebar({
         <ContactmomentForm leadId={leadId} onAdded={onAdded} />
       </div>
 
-      {/* Timeline */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2">
+      {/* Timeline — eigen scroll alleen op desktop; op telefoon scrollt de hele pagina */}
+      <div className="md:flex-1 md:min-h-0 md:overflow-y-auto px-4 py-2">
         {momenten.length === 0 ? (
           <p className="text-[12px] text-fg-3 py-4 text-center">Nog geen contactmomenten.</p>
         ) : (
@@ -318,6 +319,7 @@ export function LeadDetailModule({
   const [editOpen, setEditOpen] = useState(false)
   const [bijlageOpen, setBijlageOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const isMobile = useIsMobile()
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [, startTransition] = useTransition()
@@ -429,11 +431,12 @@ export function LeadDetailModule({
       </div>
 
       {/* ── Content + sidebar ──────────────────────────────────────────────── */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      {/* Telefoon: panelen stapelen en de hele kolom scrollt; desktop: twee panelen elk eigen scroll. */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
 
         {/* Main content */}
-        <div className="flex-1 min-w-0 overflow-y-auto">
-          <div className="w-full max-w-8/12 mx-auto min-h-full px-8 pt-6 pb-8 flex flex-col gap-3">
+        <div className="min-w-0 md:flex-1 md:overflow-y-auto">
+          <div className="w-full max-w-none md:max-w-8/12 mx-auto min-h-full px-4 md:px-8 pt-6 pb-8 flex flex-col gap-3">
 
             {/* Dienst — subtiel, boven de titel */}
             {lead.dienst && (
@@ -614,7 +617,7 @@ export function LeadDetailModule({
         <ContactmomentenSidebar
           leadId={lead.id}
           momenten={momenten}
-          collapsed={sidebarCollapsed}
+          collapsed={sidebarCollapsed && !isMobile}
           onToggle={() => setSidebarCollapsed((v) => !v)}
           onAdded={handleMomentAdded}
           onDelete={handleMomentDelete}

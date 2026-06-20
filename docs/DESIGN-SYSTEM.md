@@ -84,7 +84,7 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `Badge` | `variant` (default/secondary/outline/destructive/ghost/link) | Tellers en generieke chips |
 | `StatusChip` | `iconName`, `label`, `textClass`, `iconSize`, `labelClass` | Icoon + label in statuskleur; voed met `KANBAN_COLUMNS` / `PROJECT_COLUMNS` / content-`STATUS_CONFIG` |
 | `SegmentedControl<T>` | `options [{value,label,icon?}]`, `value`, `onChange` | Elke "kies één van N"-switcher (views, filters). **Geen eigen pill-rows bouwen** |
-| `SearchInput` | `value`, `onChange`, `placeholder`, `ariaLabel?`, `autoFocus?`, `className?` | Elk zoekveld; standaard pill 220px |
+| `SearchInput` | `value`, `onChange`, `placeholder`, `ariaLabel?`, `autoFocus?`, `className?` | Elk zoekveld; volle breedte op telefoon, pill 220px vanaf `md` |
 | `Input` / `Textarea` / `Label` | native props | Formuliervelden. Borderless inline-editors (titel in drawers) blijven bewust raw |
 | `Checkbox` | `checked`, `onCheckedChange` | base-ui checkbox met vinkje |
 | `Select` (+Trigger/Content/Item/Group/Value) | base-ui | Dropdowns in formulieren/filters; portal-popup |
@@ -101,6 +101,7 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `LevelBadge` | `level` (0–3), `withIcon?` | Toegangsniveau als getinte pill (weergave) |
 | `RolePill` | `role` (`RoleId`), `active?`, `onClick?` | Rol-chip met gekleurde dot; klikbaar of informatief. Kleur/naam uit `ROLE_META` (`lib/permissions`) |
 | `Stepper` | `steps [{id,label,icon?}]`, `current`, `onJump?` | Voortgangsindicator voor wizards; eerdere stappen klikbaar |
+| `MobileListCard` | `href?` of `onClick?`, `selected?`, `leading?`, `trailing?`, children | Tap-bare kaart die op telefoon (`< md`) een tabelrij vervangt (zie KlantenTable/LeadsLijst/TakenLijst). Schil + selectie-state + optionele checkbox/kebab; inhoud vul je zelf |
 
 ### Overlays — `components/ui/`
 
@@ -110,7 +111,7 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 | `Drawer` (vaul) / `AppDrawer` (+Header/Meta/Body/Footer) | Zwevend zijpaneel voor detail/aanmaak-flows. Gebruik vrijwel altijd `AppDrawer` |
 | `DropdownMenu` (+Trigger/Content/Item/Label/Separator) | Elk klik-menu (radix, met keyboard-nav). **Geen handgerolde absolute panelen** |
 | `Popover` (+Trigger/Content/Header) | Vrije popups (basis onder DatePicker) |
-| `SelectionBar` | Zwevende actiebalk onderaan bij bulk-selectie (`count`, `onClear`, `label?`, children = acties). Verschijnt pas bij `count > 0` (zie KlantenTable) |
+| `SelectionBar` | Zwevende actiebalk onderaan bij bulk-selectie (`count`, `onClear`, `label?`, children = acties). Verschijnt pas bij `count > 0` (zie KlantenTable). Op telefoon zweeft 'm boven de bottom tab bar; label verbergt onder `sm` |
 
 ⚠ base-ui/radix-popups **binnen een vaul-Drawer** hebben `pointer-events-auto` nodig — zit al in de Content-componenten gebakken (zie memory/audit).
 
@@ -161,6 +162,18 @@ Semantische aliassen: `--status-todo` (grijs), `--status-progress`/`--status-war
 5. **Datums/valuta altijd via `lib/dates` en `lib/format`.**
 6. **Bestandsnamen**: PascalCase voor componenten (`SegmentedControl.tsx`); `'use client'` alleen waar state/interactie zit.
 7. **a11y**: interactieve elementen krijgen een `aria-label` als er geen zichtbare tekst is; gebruik bestaande overlays (focus-trap/keyboard zit erin).
+
+## 3a. Responsive / mobiel
+
+De app is desktop-first. **"Mobiel" = telefoon, `< 768px` (Tailwind `md`-breakpoint).** Tablet en groter (`≥ md`) houden de desktop-layout. Eén contract, app-breed:
+
+- **Breakpoint:** schrijf de basis-stijl voor telefoon en override vanaf `md:` voor desktop (bv. `px-3 md:px-4`, `hidden md:block`). Gebruik géén `sm:`/`lg:` voor de mobiel-grens — alleen `md` scheidt telefoon van desktop.
+- **Navigatie:** desktop heeft de [`Sidebar`](../components/layout/Sidebar.tsx); telefoon heeft [`MobileNav`](../components/layout/MobileNav.tsx) — een bottom tab bar (Dashboard · Klanten · Projecten · Content) + een "Meer"-sheet met de volledige menulijst. Beide putten uit `NAV` + `useVisibleNav()` in `Sidebar.tsx` (één bron van waarheid, incl. rechtenfilter).
+- **Safe areas:** de viewport staat op `viewport-fit=cover` ([`app/layout.tsx`](../app/layout.tsx)). Vaste elementen aan de onderrand krijgen `padding-bottom: env(safe-area-inset-bottom)` zodat ze boven de home-bar blijven.
+- **Hoogte:** gebruik `dvh` (niet `vh`) voor full-height shells, zodat de mobiele browser-toolbar de layout niet afsnijdt.
+- **Kanban:** de gedeelde [`KanbanBoard`](../components/ui/KanbanBoard.tsx) zet kolommen op telefoon op ~82vw met horizontale scroll-snap (Trello-stijl swipen); op desktop vullen ze samen de breedte. Drag-and-drop is native HTML5 → **alleen desktop**; op telefoon verplaats je een kaart via tik → detail → status.
+- **Kalender/lijst-views:** modules met meerdere weergaven (Leads/Taken/Content) defaulten op telefoon naar de **lijst/agenda** (via `useIsMobile`), niet naar kanban/kalender-grids — die blijven desktop-werk. De content-agenda is een iOS-stijl maand-grid (event-dots) + dag-lijst eronder (`MobileCalendar` in `ContentModule`).
+- **Detailpagina's & formulieren:** twee-paneel-detailviews stapelen op telefoon (`flex-col md:flex-row`, hele kolom scrollt i.p.v. losse panelen); vaste zijbalk-breedtes worden `w-full md:w-[340px]`. Formulier-grids zijn `grid-cols-1 md:grid-cols-2`. Detail-padding `px-4 md:px-8`.
 
 ## 4. Nieuw component toevoegen — checklist
 

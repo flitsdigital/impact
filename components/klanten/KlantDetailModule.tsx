@@ -185,7 +185,7 @@ export function KlantDetailModule({ klant, projects, facturen }: KlantDetailModu
     <div className="flex flex-col h-full overflow-auto">
       {/* Header */}
       <div className="border-b border-border shrink-0">
-        <div className="flex items-center justify-between pl-8 pr-3 py-3">
+        <div className="flex items-center justify-between pl-4 pr-3 py-3 md:pl-8">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/klanten"
@@ -212,7 +212,7 @@ export function KlantDetailModule({ klant, projects, facturen }: KlantDetailModu
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-4 md:p-6">
         <div className="max-w-4xl mx-auto flex flex-col gap-6">
 
           {/* Contactgegevens */}

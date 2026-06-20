@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { AuthProvider } from "@/components/layout/AuthProvider"
 import { Toaster } from "sonner"
@@ -6,6 +6,16 @@ import { Toaster } from "sonner"
 export const metadata: Metadata = {
   title: "Flits Impact CRM",
   description: "Agency management voor Flits Digital",
+}
+
+// viewport-fit=cover laat env(safe-area-inset-*) werken (notch/home-bar op telefoon).
+// Geen maximumScale/userScalable: zoom blijft toegankelijk.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#070707",
+  colorScheme: "dark",
 }
 
 export default function RootLayout({

@@ -12,6 +12,7 @@ import { AvatarStack } from '@/components/ui/AvatarStack'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { StatusChip } from '@/components/ui/StatusChip'
+import { MobileListCard } from '@/components/ui/MobileListCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { PillSelect } from '@/components/ui/PillSelect'
@@ -61,6 +62,7 @@ export function AtomsSection() {
   const [level, setLevel] = useState<Level>(2)
   const [role, setRole] = useState<RoleId>('lid')
   const [step, setStep] = useState(1)
+  const [cardSelected, setCardSelected] = useState(false)
 
   return (
     <section className="flex flex-col gap-8">
@@ -345,6 +347,32 @@ export function AtomsSection() {
         <div className="flex gap-2">
           <Button size="sm" variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))}>Terug</Button>
           <Button size="sm" onClick={() => setStep((s) => Math.min(2, s + 1))}>Volgende</Button>
+        </div>
+      </DemoBlock>
+
+      <DemoBlock
+        title="MobileListCard"
+        path="@/components/ui/MobileListCard"
+        description="Tap-bare kaart die op telefoon (< md) een tabelrij vervangt. Geeft de schil (tap-target, selectie-state, optionele checkbox/kebab); de inhoud vul je zelf. Gebruikt in Klanten/Leads/Taken. Geef href (detailpagina) óf onClick (drawer) mee."
+        className="flex-col items-stretch"
+      >
+        <div className="flex w-full max-w-sm flex-col gap-2">
+          <MobileListCard
+            onClick={() => setCardSelected((s) => !s)}
+            selected={cardSelected}
+            leading={<Checkbox checked={cardSelected} onCheckedChange={() => setCardSelected((s) => !s)} />}
+            trailing={
+              <span className="inline-flex size-8 items-center justify-center rounded-md text-fg-2">
+                <SvgIcon name="ellipsis" size={16} />
+              </span>
+            }
+          >
+            <span className="text-[14px] font-medium text-fg-1">Ready4IT</span>
+            <span className="flex items-center gap-1.5">
+              <StatusChip iconName="circle-check" label="Actief" textClass="text-green-500" className="text-xs" />
+            </span>
+            <span className="text-[12px] text-fg-2">Tik op de kaart om te (de)selecteren</span>
+          </MobileListCard>
         </div>
       </DemoBlock>
     </section>

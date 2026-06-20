@@ -22,7 +22,7 @@ export function SearchInput({
   className,
 }: SearchInputProps) {
   return (
-    <div className={cn('flex items-center gap-1.5 bg-bg-3 rounded-full px-3 h-7 w-[220px]', className)}>
+    <div className={cn('flex items-center gap-1.5 bg-bg-3 rounded-full px-3 h-7 w-full min-w-0 md:w-[220px]', className)}>
       <SvgIcon name="magnifying-glass" size={13} className="text-fg-3 shrink-0" />
       <input
         type="text"

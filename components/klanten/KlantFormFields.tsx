@@ -72,7 +72,7 @@ export function KlantFormFields({ klant, idPrefix = '' }: KlantFormFieldsProps) 
       </div>
 
       {/* Email + Telefoon */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={id('email')}>Email</Label>
           <Input

@@ -282,7 +282,12 @@ body {
   transition: background 120ms, color 120ms;
 }
 .fl-navrow:hover { background: rgba(255,255,255,0.02); color: var(--fg-1); }
+.fl-navrow:active { background: var(--bg-3); color: var(--fg-1); }
 .fl-navrow[data-active="true"] { background: var(--bg-3); color: var(--fg-1); }
+/* Ruimere tap-targets op telefoon (touch) */
+@media (max-width: 767px) {
+  .fl-navrow { height: 40px; }
+}
 
 /* ─── Search pill ─── */
 .fl-search {

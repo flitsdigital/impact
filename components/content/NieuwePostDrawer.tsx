@@ -386,7 +386,7 @@ export function NieuwePostDrawer({ open, onOpenChange, klanten, teamleden, defau
                 </span>
               </button>
             ) : (
-              <div className="grid grid-cols-3 gap-2 shrink-0">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 shrink-0">
                 {media.map((m, i) => (
                   <div
                     key={i}

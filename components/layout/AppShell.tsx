@@ -2,6 +2,7 @@
 
 import { Sidebar } from "@/components/layout/Sidebar"
 import { TopBar } from "@/components/layout/TopBar"
+import { MobileNav } from "@/components/layout/MobileNav"
 import { useSidebarStore } from "@/store/sidebar"
 import { SvgIcon } from "@/components/ui/SvgIcon"
 import { TakenDrawer } from "@/components/todos/TakenDrawer"
@@ -10,13 +11,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { collapsed, toggle } = useSidebarStore()
 
   return (
-    <div className="flex flex-col h-screen bg-bg-0 overflow-hidden">
+    <div className="flex flex-col h-dvh bg-bg-0 overflow-hidden">
       <TopBar />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar wrapper — animates width on collapse */}
+        {/* Sidebar wrapper — animates width on collapse; verborgen op telefoon (<md) */}
         <div
-          className="shrink-0 overflow-hidden transition-[width,min-width] duration-200 ease-in-out"
+          className="hidden md:block shrink-0 overflow-hidden transition-[width,min-width] duration-200 ease-in-out"
           style={{
             width: collapsed ? 0 : "var(--sidebar-w)",
             minWidth: collapsed ? 0 : "var(--sidebar-w)",
@@ -26,13 +27,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Content area */}
-        <div className="flex-1 overflow-hidden pt-[15px] px-4 pb-4 min-w-0 relative flex flex-col">
-          {/* Collapse toggle */}
+        <div className="flex-1 overflow-hidden pt-[15px] px-3 pb-3 md:px-4 md:pb-4 min-w-0 relative flex flex-col">
+          {/* Collapse toggle — alleen desktop */}
           <button
             type="button"
             onClick={toggle}
             aria-label={collapsed ? "Sidebar uitklappen" : "Sidebar inklappen"}
-            className="absolute left-1 top-[27px] z-10 flex items-center justify-center size-[22px] p-1 rounded-sm border border-border-subtle bg-bg-3 cursor-pointer text-fg-2 transition-colors hover:text-fg-1 hover:bg-bg-4"
+            className="hidden md:flex absolute left-1 top-[27px] z-10 items-center justify-center size-[22px] p-1 rounded-sm border border-border-subtle bg-bg-3 cursor-pointer text-fg-2 transition-colors hover:text-fg-1 hover:bg-bg-4"
           >
             {collapsed
               ? <SvgIcon name="chevrons-right" size={14} />
@@ -45,6 +46,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+
+      <MobileNav />
 
       <TakenDrawer />
     </div>

@@ -29,13 +29,14 @@ export function PageHeader({
 
   return (
     <div className={cn('border-b border-border shrink-0', className)}>
-      <div className="flex items-center justify-between pl-8 pr-3 py-3">
+      {/* Telefoon: titel boven, acties op een eigen volle regel eronder. Desktop: naast elkaar. */}
+      <div className="flex flex-col gap-2.5 px-4 py-3 md:flex-row md:items-center md:justify-between md:gap-2 md:pl-8 md:pr-3">
         <div className="flex items-center gap-2 min-w-0">
           {iconEl}
           <span className="text-sm font-medium text-foreground truncate">{title}</span>
         </div>
         {actions ? (
-          <div className="flex items-center gap-2 shrink-0">{actions}</div>
+          <div className="flex items-center gap-2 md:shrink-0">{actions}</div>
         ) : null}
       </div>
       {toolbar}
@@ -53,7 +54,8 @@ export function PageToolbar({
   return (
     <div
       className={cn(
-        'flex items-center gap-2 pl-8 pr-3 py-2 border-t border-border shrink-0',
+        // Telefoon: horizontaal scrollbaar (brede segmented-controls/filters blijven bereikbaar).
+        'flex items-center gap-2 px-4 py-2 border-t border-border shrink-0 overflow-x-auto md:overflow-visible md:pl-8 md:pr-3',
         className,
       )}
     >

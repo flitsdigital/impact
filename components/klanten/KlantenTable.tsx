@@ -21,6 +21,7 @@ import {
   DropdownMenuLabel,
 } from '@/components/ui/DropdownMenu'
 import { SelectionBar } from '@/components/ui/SelectionBar'
+import { MobileListCard } from '@/components/ui/MobileListCard'
 import { cn } from '@/lib/utils'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { SearchInput } from '@/components/ui/SearchInput'
@@ -162,8 +163,67 @@ export function KlantenTable({ klanten }: { klanten: Klant[] }) {
         }
       />
 
-      {/* ── Table ───────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-auto min-h-0">
+      {/* ── Kaarten (telefoon) ───────────────────────────────────────────── */}
+      <div className="md:hidden flex-1 overflow-y-auto min-h-0 flex flex-col gap-2 p-3">
+        {filtered.length === 0 && (
+          <p className="py-16 text-center text-sm text-muted-foreground">
+            {search ? 'Geen klanten gevonden.' : 'Nog geen klanten toegevoegd.'}
+          </p>
+        )}
+        {filtered.map((klant) => {
+          const date = formatDate(klant.volgende_factuur)
+          const isSelected = selected.has(klant.id)
+          return (
+            <MobileListCard
+              key={klant.id}
+              href={`/klanten/${klant.id}`}
+              selected={isSelected}
+              leading={
+                <Checkbox checked={isSelected} onCheckedChange={() => toggleOne(klant.id)} />
+              }
+              trailing={
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    aria-label="Acties"
+                  >
+                    <SvgIcon name="ellipsis" size={16} />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {klant.status === 'gearchiveerd' ? (
+                      <DropdownMenuItem onSelect={() => runBulk({ status: 'actief' }, [klant.id], 'Klant teruggezet')}>
+                        <SvgIcon name="refresh" size={13} />
+                        Terugzetten
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        className="text-destructive"
+                        onSelect={() => runBulk({ status: 'gearchiveerd' }, [klant.id], 'Klant gearchiveerd')}
+                      >
+                        <SvgIcon name="archive" size={13} />
+                        Archiveren
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              }
+            >
+              <span className="truncate text-[14px] font-medium text-foreground">{klant.naam}</span>
+              <span className="flex flex-wrap items-center gap-1.5">
+                <TypeBadge type={klant.type} />
+                <StatusBadge status={klant.status} />
+              </span>
+              <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                {klant.contactpersoon && <span className="truncate">{klant.contactpersoon}</span>}
+                {date && <span className="shrink-0">· {date.label}</span>}
+              </span>
+            </MobileListCard>
+          )
+        })}
+      </div>
+
+      {/* ── Table (tablet/desktop) ──────────────────────────────────────── */}
+      <div className="hidden md:block flex-1 overflow-auto min-h-0">
         <table
           className="w-full border-separate border-spacing-0 text-sm"
           style={{ minWidth: 860 }}

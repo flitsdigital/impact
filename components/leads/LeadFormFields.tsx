@@ -49,7 +49,7 @@ export function LeadFormFields({ lead, idPrefix = '' }: LeadFormFieldsProps) {
       </div>
 
       {/* Email + Telefoon */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={id('email')}>Email</Label>
           <Input
@@ -74,7 +74,7 @@ export function LeadFormFields({ lead, idPrefix = '' }: LeadFormFieldsProps) {
       </div>
 
       {/* Bron + Waarde */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={id('bron')}>Bron</Label>
           {/* PillSelect variant=input: native select, werkt betrouwbaar in de Drawer */}
